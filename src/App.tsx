@@ -1,9 +1,8 @@
+import { RouterProvider } from "react-router-dom";
+import { routes } from "./config/routes/routes";
+
 function App() {
-  return (
-    <>
-      <h1>GrowTwitter App</h1>
-    </>
-  )
+  return <RouterProvider router={routes} />;
 }
 
-export default App
+export default App;
