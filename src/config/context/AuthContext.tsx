@@ -6,7 +6,7 @@ import axios from "axios";
 interface AuthContextType {
   user: User | null; // Loged user data (or null if not loged)
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (login: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -45,11 +45,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
    * 4. Saves token in localStorage (persists session across reloads)
    * 5. Interceptor automatically adds this token to future requests
    */
-  const login = async (email: string, password: string) => {
+  const login = async (login: string, password: string) => {
     // Backend layer
     try {
       const response = await api.post("/login", {
-        email,
+        login,
         password,
       });
 
