@@ -1,6 +1,7 @@
 import { createContext, useContext, useState } from "react";
 import type { ReactNode } from "react";
 import type { User } from "../../models/user";
+import axios from "axios";
 
 interface AuthContextType {
   user: User | null; // Loged user data (or null if not loged)
@@ -11,42 +12,54 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:3000",
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+/**
+ * Axios interceptor add the JWT token to the Authorization header of
+ * each/every request if the user is logged in
+ *
+ * This way, we don't have to manually add the token to each request we
+ * make to the backend
+ */
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("authToken");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  // State that save loged user data
-  // If null = without user loged
-  // If it was an object User = someone is loged
   const [user, setUser] = useState<User | null>(null);
 
   /**
    * Login function:
-   * 1. Sends email and password to backend
-   * 2. Receives a JWT token (for future protected requests)
-   * 3. Receives user data
-   * 4. Saves user in state (setUser)
-   * 5. Saves token in localStorage (for persistence between reloads)
+   * 1. Makes POST request to /login with email and password
+   * 2. Backend returns { token: "jwt...", user: { id, username, ... } }
+   * 3. Saves user in state (allows rest of app to know we're logged in)
+   * 4. Saves token in localStorage (persists session across reloads)
+   * 5. Interceptor automatically adds this token to future requests
    */
   const login = async (email: string, password: string) => {
+    // Backend layer
     try {
-      // Backend layer
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
+      const response = await api.post("/login", {
+        email,
+        password,
       });
 
-      if (!response.ok) {
-        throw new Error("Login failed");
-      }
+      const { token, user: userData } = response.data;
 
-      const data = await response.json();
+      // Save user data in state (isAuthenticated becomes true)
+      setUser(userData);
 
-      // Save user data in state (this will make isAuthenticated = true)
-      setUser(data.user);
-
-      // Save token
-      localStorage.setItem("authToken", data.token);
+      // Save token in localStorage for future requests
+      localStorage.setItem("authToken", token);
     } catch (error) {
       console.error("Error during login:", error);
       throw error;
@@ -54,10 +67,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   /**
-   * Logout function:
-   * 1. Removes user from state (back to null)
-   * 2. Removes token from localStorage
-   * 3. Components using useAuth() will detect there's no more user
+   * Logout function
+   * 1. Removes user from state (isAuthenticated becomes false)
+   * 2. Remove token from localStorage
+   * 3. ProtectedRoute will automatically redirect to /login
    */
   const logout = () => {
     setUser(null);
@@ -74,14 +87,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 };
 
 /**
- * Custom hook to acess auth context values and functions easily in any component.
+ * Custom hook to acess auth context values and functions easily in any component
  * Example of usage:
  * const { user, isAuthenticated, login, logout } = useAuth();
  */
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth deve ser usado dentro de AuthProvider");
+    throw new Error("useAuth need to be used inside an AuthProvider");
   }
   return context;
 };
