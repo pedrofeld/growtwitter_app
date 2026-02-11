@@ -52,10 +52,10 @@ class UserService {
     }
   }
 
-  public async login(username: string, password: string): Promise<ResponseDto> {
+  public async login(login: string, password: string): Promise<ResponseDto> {
     try {
       const result = await api.post("/login", {
-        username,
+        login,
         password,
       });
 
