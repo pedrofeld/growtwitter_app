@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState } from "react";
 import type { ReactNode } from "react";
 import type { User } from "../../models/user";
@@ -35,7 +36,24 @@ api.interceptors.request.use((config) => {
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  
+  // Initialize user state from localStorage (if there's a saved user)
+  const [user, setUser] = useState<User | null>(() => {
+    const savedUser = localStorage.getItem("authUser");
+
+    if (!savedUser) {
+      localStorage.removeItem("authToken");
+      return null;
+    }
+
+    try {
+      return JSON.parse(savedUser) as User;
+    } catch {
+      localStorage.removeItem("authUser");
+      localStorage.removeItem("authToken");
+      return null;
+    }
+  });
 
   /**
    * Login function:
@@ -53,10 +71,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         password,
       });
 
-      const { token, user: userData } = response.data;
+      const responseData = response.data;
+      const token = responseData?.token ?? responseData?.data?.token;
+      const userData = responseData?.user ?? responseData?.data?.user;
+
+      if (!token) {
+        throw new Error("Invalid login response: missing token");
+      }
+
+      if (!userData) {
+        throw new Error("Invalid login response: missing user data");
+      }
 
       // Save user data in state (isAuthenticated becomes true)
       setUser(userData);
+      localStorage.setItem("authUser", JSON.stringify(userData));
 
       // Save token in localStorage for future requests
       localStorage.setItem("authToken", token);
@@ -75,11 +104,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = () => {
     setUser(null);
     localStorage.removeItem("authToken");
+    localStorage.removeItem("authUser");
   };
+
+  const token = localStorage.getItem("authToken");
+  const isAuthenticated = !!user && !!token;
 
   return (
     <AuthContext.Provider
-      value={{ user, isAuthenticated: !!user, login, logout }}
+      value={{ user, isAuthenticated, login, logout }}
     >
       {children}
     </AuthContext.Provider>
