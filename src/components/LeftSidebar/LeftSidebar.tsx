@@ -17,14 +17,14 @@ interface LeftSidebarProps {
   themeMode: "light" | "dark";
   onToggleTheme: () => void;
   onLogout: () => void;
-  onTweet: () => void;
+  onTweet?: () => void;
 }
 
 export const LeftSidebar = ({
   themeMode,
   onToggleTheme,
   onLogout,
-  onTweet,
+  onTweet = () => undefined,
 }: LeftSidebarProps) => {
   return (
     <SidebarStyled $themeMode={themeMode}>
