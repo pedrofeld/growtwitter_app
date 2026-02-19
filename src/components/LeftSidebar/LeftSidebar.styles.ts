@@ -1,4 +1,4 @@
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 
 interface ThemeModeProps {
   $themeMode: "light" | "dark";
@@ -17,25 +17,7 @@ const palette = {
   },
 };
 
-export const ThemeToggleButtonStyled = styled.button<ThemeModeProps>`
-  border: 1px solid
-    ${({ $themeMode }) => ($themeMode === "light" ? "#ccc" : "#555")};
-  background: ${({ $themeMode }) =>
-    $themeMode === "light" ? "#fff" : "#16181c"};
-  color: ${({ $themeMode }) => palette[$themeMode].text};
-  padding: 10px 14px;
-  border-radius: 999px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover {
-    border-color: ${({ $themeMode }) => palette[$themeMode].accent};
-  }
-`;
-
-export const LogoutButtonStyled = styled.button<ThemeModeProps>`
+export const TweetButtonStyled = styled.button<ThemeModeProps>`
   border: none;
   background: ${({ $themeMode }) => palette[$themeMode].accent};
   color: #ffffff;
@@ -50,6 +32,45 @@ export const LogoutButtonStyled = styled.button<ThemeModeProps>`
   &:hover {
     background: ${({ $themeMode }) => palette[$themeMode].accentHover};
   }
+`;
+
+const IconActionButtonStyles = css<ThemeModeProps>`
+  border: 1px solid
+    ${({ $themeMode }) => ($themeMode === "light" ? "#ccc" : "#555")};
+  background: ${({ $themeMode }) =>
+    $themeMode === "light" ? "#fff" : "#16181c"};
+  color: ${({ $themeMode }) => palette[$themeMode].text};
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  svg {
+    font-size: 22px;
+  }
+
+  &:hover {
+    border-color: ${({ $themeMode }) => palette[$themeMode].accent};
+  }
+`;
+
+export const ThemeToggleButtonStyled = styled.button<ThemeModeProps>`
+  ${IconActionButtonStyles}
+`;
+
+export const LogoutButtonStyled = styled.button<ThemeModeProps>`
+  ${IconActionButtonStyles}
+`;
+
+export const ActionButtonsRowStyled = styled.div`
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
 `;
 
 export const SidebarStyled = styled.aside<ThemeModeProps>`
