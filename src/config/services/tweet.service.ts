@@ -63,6 +63,22 @@ class TweetService {
             return apiService.handleError(error);
         }
     }
+
+    public async getFeed(userId: string): Promise<ResponseDto> {
+        try {
+            const result = await api.get(`/feed`, {
+                params: {
+                    userId,
+                },
+            });
+            return {
+                ok: true,
+                ...result.data,
+            }
+        } catch (error: any) {
+            return apiService.handleError(error);
+        }
+    }
 }
 
 export default new TweetService();
