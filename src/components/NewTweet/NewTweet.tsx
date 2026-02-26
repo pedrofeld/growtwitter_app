@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { IoIosClose } from "react-icons/io";
 import {
 	ModalBackdropStyled,
 	ModalCardStyled,
@@ -32,15 +33,15 @@ export const NewTweet = ({ isOpen, onClose, themeMode }: NewTweetProps) => {
 		<ModalBackdropStyled onClick={onClose}>
 			<ModalCardStyled $themeMode={themeMode} onClick={(event) => event.stopPropagation()}>
 				<ModalHeaderStyled>
-					<ModalTitleStyled>Novo tweet</ModalTitleStyled>
-					<ModalCloseButtonStyled type="button" onClick={onClose} aria-label="Fechar">
-						×
+					<ModalTitleStyled>New tweet</ModalTitleStyled>
+					<ModalCloseButtonStyled type="button" onClick={onClose} aria-label="Close">
+						<IoIosClose /> 
 					</ModalCloseButtonStyled>
 				</ModalHeaderStyled>
 
 				<ModalTextareaStyled
 					$themeMode={themeMode}
-					placeholder="O que está acontecendo?"
+					placeholder="What's happening?"
 					value={tweetContent}
 					onChange={(event) => setTweetContent(event.target.value)}
 					maxLength={280}
