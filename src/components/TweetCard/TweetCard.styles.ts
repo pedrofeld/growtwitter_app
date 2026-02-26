@@ -4,6 +4,10 @@ export const TweetCardStyled = styled.article`
   border: 1px solid #e1e8ed;
   border-radius: 12px;
   padding: 12px;
+
+  &:not(:last-child) {
+    margin-bottom: 12px;
+  }
 `;
 
 export const TweetBodyLayoutStyled = styled.div`
@@ -42,6 +46,7 @@ export const MetricStyled = styled.span`
   gap: 6px;
   font-size: 13px;
   opacity: 0.9;
+  cursor: pointer;
 `;
 
 export const ReplyTagStyled = styled.small`
