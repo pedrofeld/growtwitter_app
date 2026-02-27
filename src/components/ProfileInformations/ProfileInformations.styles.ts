@@ -11,6 +11,7 @@ export const TabButtonStyled = styled.button<{ $isActive: boolean }>`
 	border: none;
 	border-bottom: 3px solid ${({ $isActive }) => ($isActive ? "#1d9bf0" : "transparent")};
 	background: transparent;
+	color: inherit;
 	padding: 14px 8px 12px;
 	font-weight: 700;
 	cursor: pointer;
