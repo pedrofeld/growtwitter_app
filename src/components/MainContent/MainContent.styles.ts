@@ -41,6 +41,27 @@ export const ContentHeaderStyled = styled.header<ThemeModeProps>`
   color: ${({ $themeMode }) => palette[$themeMode].text};
 `;
 
+export const ContentHeaderRowStyled = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
+export const BackButtonStyled = styled.button`
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  svg {
+    font-size: 16px;
+  }
+`;
+
 export const ContentBodyStyled = styled.section`
   padding: 16px;
 `;
