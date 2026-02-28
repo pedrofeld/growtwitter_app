@@ -5,7 +5,6 @@ import { TweetCard, type FeedTweetCardData } from "../components/TweetCard/Tweet
 
 interface FeedUser {
   id: string;
-  following?: string[];
 }
 
 interface FeedTweetApi {
@@ -66,7 +65,8 @@ export const FeedPage = () => {
       setError(null);
 
       try {
-        const response = await tweetService.listTweets();
+        const currentUser = user as FeedUser;
+        const response = await tweetService.getFeed(currentUser.id);
 
         if (!response.ok) {
           setError("Error loading feed");
@@ -74,19 +74,13 @@ export const FeedPage = () => {
           return;
         }
 
-        const currentUser = user as FeedUser;
-
         const payload = (response.data ?? []) as FeedTweetApi[] | TweetsPayload;
         const allTweets = Array.isArray(payload)
           ? payload
           : payload.data
 
-        // List of tweets: people I follow + myself
-        const followingIds = (currentUser.following ?? []);
-        followingIds.push(currentUser.id);
-
         const visibleTweets: FeedTweet[] = allTweets
-          .filter((tweet) => tweet?.user?.id && followingIds.includes(tweet.user.id))
+          .filter((tweet) => tweet?.user?.id)
           .map((tweet) => {
             const profileImage = tweet.user.profileImage || tweet.user.imgUrl || "";
 
