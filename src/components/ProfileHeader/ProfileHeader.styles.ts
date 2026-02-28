@@ -12,8 +12,10 @@ export const CoverImageStyled = styled.div`
 export const ProfileAvatarStyled = styled.img`
 	width: 120px;
 	height: 120px;
+	aspect-ratio: 1 / 1;
+	display: block;
 	object-fit: cover;
-	border-radius: 999px;
+	border-radius: 50%;
 	border: 4px solid #ffffff;
 	margin-top: -60px;
 	margin-left: 16px;
