@@ -73,7 +73,7 @@ class TweetService {
             });
             return {
                 ok: true,
-                ...result.data,
+                data: result.data,
             }
         } catch (error: any) {
             return apiService.handleError(error);
