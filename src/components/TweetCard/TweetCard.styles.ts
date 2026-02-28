@@ -49,6 +49,18 @@ export const MetricStyled = styled.span`
   cursor: pointer;
 `;
 
+export const LikeButtonStyled = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  opacity: 0.9;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  padding: 0;
+`;
+
 export const ReplyTagStyled = styled.small`
   display: inline-block;
   margin-top: 6px;

@@ -19,7 +19,7 @@ interface FeedTweetApi {
   };
   content: string;
   createdAt: string;
-  likes?: unknown[];
+  likes?: Array<{ id?: string; userId?: string; likeId?: string; _id?: string } | string>;
   likesCount?: number;
   replies?: unknown[];
   repliesCount?: number;
@@ -101,6 +101,7 @@ export const FeedPage = () => {
               },
               content: tweet.content,
               createdAt: tweet.createdAt,
+              likes: tweet.likes,
               likesCount: tweet.likesCount ?? (tweet.likes?.length ?? 0),
               repliesCount: tweet.repliesCount ?? (tweet.replies?.length ?? 0),
               parentId: tweet.parentId,
