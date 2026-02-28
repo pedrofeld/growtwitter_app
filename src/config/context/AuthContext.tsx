@@ -2,7 +2,40 @@
 import { createContext, useContext, useState } from "react";
 import type { ReactNode } from "react";
 import type { User } from "../../models/user";
-import axios from "axios";
+import { api } from "../services/api.service";
+
+function normalizeTokenValue(rawToken: unknown): string | null {
+  if (!rawToken) return null;
+
+  if (typeof rawToken === "object") {
+    const tokenFromObject = (rawToken as { token?: string; accessToken?: string }).token
+      || (rawToken as { token?: string; accessToken?: string }).accessToken;
+    return normalizeTokenValue(tokenFromObject);
+  }
+
+  if (typeof rawToken !== "string") return null;
+
+  const trimmedValue = rawToken.trim().replace(/^"|"$/g, "");
+  const normalizedToken = trimmedValue.replace(/^Bearer\s+/i, "").trim();
+
+  return normalizedToken || null;
+}
+
+function isJwtExpired(token: string): boolean {
+  try {
+    const payloadPart = token.split(".")[1];
+    if (!payloadPart) return false;
+
+    const base64 = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
+    const payload = JSON.parse(atob(base64)) as { exp?: number };
+
+    if (!payload.exp) return false;
+
+    return Date.now() >= payload.exp * 1000;
+  } catch {
+    return false;
+  }
+}
 
 interface AuthContextType {
   user: User | null; // Loged user data (or null if not loged)
@@ -13,33 +46,18 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:3000",
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-/**
- * Axios interceptor add the JWT token to the Authorization header of
- * each/every request if the user is logged in
- *
- * This way, we don't have to manually add the token to each request we
- * make to the backend
- */
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("authToken");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   // Initialize user state from localStorage (if there's a saved user)
   const [user, setUser] = useState<User | null>(() => {
     const savedUser = localStorage.getItem("authUser");
+    const storedToken = normalizeTokenValue(localStorage.getItem("authToken"));
+
+    if (!storedToken || isJwtExpired(storedToken)) {
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("authUser");
+      return null;
+    }
 
     if (!savedUser) {
       localStorage.removeItem("authToken");
@@ -72,7 +90,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       const responseData = response.data;
-      const token = responseData?.token ?? responseData?.data?.token;
+      const token = normalizeTokenValue(
+        responseData?.token
+          ?? responseData?.data?.token
+          ?? responseData?.accessToken
+          ?? responseData?.data?.accessToken,
+      );
       const userData = responseData?.user ?? responseData?.data?.user;
 
       if (!token) {
@@ -108,7 +131,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const token = localStorage.getItem("authToken");
-  const isAuthenticated = !!user && !!token;
+  const normalizedToken = normalizeTokenValue(token);
+  const isAuthenticated = !!user && !!normalizedToken && !isJwtExpired(normalizedToken);
 
   return (
     <AuthContext.Provider
