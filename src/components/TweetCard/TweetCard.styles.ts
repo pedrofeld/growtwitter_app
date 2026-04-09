@@ -54,6 +54,7 @@ export const LikeButtonStyled = styled.button`
   align-items: center;
   gap: 6px;
   font-size: 13px;
+  color: inherit;
   opacity: 0.9;
   cursor: pointer;
   border: none;
