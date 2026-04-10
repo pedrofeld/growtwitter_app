@@ -86,6 +86,12 @@ export const ModalFooterStyled = styled.div`
   justify-content: flex-end;
 `;
 
+export const ModalErrorTextStyled = styled.p`
+  margin: 10px 0 0;
+  color: #d93025;
+  font-size: 14px;
+`;
+
 export const ModalSubmitButtonStyled = styled.button<ThemeModeProps>`
   border: none;
   background: ${({ $themeMode }) => palette[$themeMode].accent};
@@ -97,5 +103,10 @@ export const ModalSubmitButtonStyled = styled.button<ThemeModeProps>`
 
   &:hover {
     background: ${({ $themeMode }) => palette[$themeMode].accentHover};
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 `;

@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import tweetService from "../config/services/tweet.service";
 import { useAuth } from "../config/context/AuthContext";
+import {
+  isCreatedTweet,
+  prependUniqueTweet,
+  TWEET_CREATED_EVENT,
+} from "../config/events/tweetCreatedEvent";
 import { TweetCard, type FeedTweetCardData } from "../components/TweetCard/TweetCard";
 
 interface FeedUser {
@@ -119,6 +124,23 @@ export const FeedPage = () => {
 
     void loadFeed();
   }, [user]);
+
+  useEffect(() => {
+    function handleTweetCreated(event: Event) {
+      const customEvent = event as CustomEvent<unknown>;
+      if (!isCreatedTweet(customEvent.detail)) return;
+
+      const createdTweet: FeedTweet = customEvent.detail;
+
+      setTweets((previousTweets) => prependUniqueTweet(previousTweets, createdTweet));
+    }
+
+    window.addEventListener(TWEET_CREATED_EVENT, handleTweetCreated);
+
+    return () => {
+      window.removeEventListener(TWEET_CREATED_EVENT, handleTweetCreated);
+    };
+  }, []);
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p>{error}</p>;

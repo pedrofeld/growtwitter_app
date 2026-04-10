@@ -6,6 +6,11 @@ import {
     type ProfileTweet,
 } from "../components/ProfileInformations/ProfileInformations";
 import { useAuth } from "../config/context/AuthContext";
+import {
+    isCreatedTweet,
+    prependUniqueTweet,
+    TWEET_CREATED_EVENT,
+} from "../config/events/tweetCreatedEvent";
 import tweetService from "../config/services/tweet.service";
 
 interface ProfileUser {
@@ -147,6 +152,29 @@ export const ProfilePage = () => {
         }
 
         void loadProfileTweets();
+    }, [profileUser?.id]);
+
+    useEffect(() => {
+        function handleTweetCreated(event: Event) {
+            const customEvent = event as CustomEvent<unknown>;
+            if (!isCreatedTweet(customEvent.detail) || !profileUser?.id) {
+                return;
+            }
+
+            const createdTweet: ProfileTweet = customEvent.detail;
+
+            if (createdTweet.author.id !== profileUser.id) {
+                return;
+            }
+
+            setTweets((previousTweets) => prependUniqueTweet(previousTweets, createdTweet));
+        }
+
+        window.addEventListener(TWEET_CREATED_EVENT, handleTweetCreated);
+
+        return () => {
+            window.removeEventListener(TWEET_CREATED_EVENT, handleTweetCreated);
+        };
     }, [profileUser?.id]);
 
     const visibleTweets = useMemo(() => {
