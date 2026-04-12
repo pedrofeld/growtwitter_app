@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type MouseEvent } from "react";
 import { FaHeart, FaRegComment, FaRegHeart } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../config/context/AuthContext";
 import likeService from "../../config/services/like.service";
 import { TweetHeader } from "../TweetHeader/TweetHeader";
@@ -46,10 +47,18 @@ export interface FeedTweetCardData {
 interface TweetCardProps {
   tweet: FeedTweetCardData;
   timeLabel: string;
+  enableDetailNavigation?: boolean;
+  sizeVariant?: "default" | "expanded";
 }
 
-export const TweetCard = ({ tweet, timeLabel }: TweetCardProps) => {
+export const TweetCard = ({
+  tweet,
+  timeLabel,
+  enableDetailNavigation = true,
+  sizeVariant = "default",
+}: TweetCardProps) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   function getUserIdFromToken(): string | undefined {
     const rawToken = localStorage.getItem("authToken");
@@ -132,7 +141,9 @@ export const TweetCard = ({ tweet, timeLabel }: TweetCardProps) => {
   });
   const [isLiking, setIsLiking] = useState(false);
 
-  async function handleLikeClick() {
+  async function handleLikeClick(event: MouseEvent<HTMLButtonElement>) {
+    event.stopPropagation();
+
     if (!user?.id || isLiking) return;
 
     const requestUserId = getUserIdFromToken() || user.id;
@@ -183,10 +194,22 @@ export const TweetCard = ({ tweet, timeLabel }: TweetCardProps) => {
     }
   }
 
+  function handleOpenTweetDetail() {
+    if (!enableDetailNavigation) return;
+
+    navigate(`/tweet/${tweet.id}`);
+  }
+
   return (
-    <TweetCardStyled>
+    <TweetCardStyled
+      $isClickable={enableDetailNavigation}
+      $sizeVariant={sizeVariant}
+      onClick={handleOpenTweetDetail}
+      aria-label={`Open tweet from @${tweet.author.username}`}
+    >
       <TweetBodyLayoutStyled>
         <ProfileImageStyled
+          $sizeVariant={sizeVariant}
           src={tweet.author.profileImage}
           alt={`Photo of ${tweet.author.username}`}
         />
@@ -196,11 +219,12 @@ export const TweetCard = ({ tweet, timeLabel }: TweetCardProps) => {
             name={tweet.author.name}
             username={tweet.author.username}
             timeLabel={timeLabel}
+            isExpanded={sizeVariant === "expanded"}
           />
 
           {tweet.parentId && <ReplyTagStyled>Replying to a tweet</ReplyTagStyled>}
 
-          <TweetContentStyled>{tweet.content}</TweetContentStyled>
+          <TweetContentStyled $sizeVariant={sizeVariant}>{tweet.content}</TweetContentStyled>
 
           <MetaRowStyled>
             <LikeButtonStyled type="button" onClick={handleLikeClick} disabled={isLiking}>

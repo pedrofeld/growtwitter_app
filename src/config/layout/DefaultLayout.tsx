@@ -18,6 +18,7 @@ export const DefaultLayout = () => {
     if (location.pathname === "/") return "Home";
     if (location.pathname.includes("explore")) return "Explore";
     if (location.pathname.includes("profile")) return "Profile";
+    if (location.pathname.includes("/tweet/")) return "Tweet";
     return "GrowTwitter";
   }, [location.pathname]);
 
