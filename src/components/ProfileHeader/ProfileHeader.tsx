@@ -24,6 +24,8 @@ interface ProfileHeaderProps {
 	isFollowing: boolean;
 	isFollowActionLoading?: boolean;
 	onFollowToggle?: () => void;
+	onEditProfileToggle?: () => void;
+	isEditingProfile?: boolean;
 	actionMessage?: string | null;
 }
 
@@ -38,6 +40,8 @@ export const ProfileHeader = ({
 	isFollowing,
 	isFollowActionLoading,
 	onFollowToggle,
+	onEditProfileToggle,
+	isEditingProfile,
 	actionMessage,
 }: ProfileHeaderProps) => {
 	return (
@@ -49,6 +53,15 @@ export const ProfileHeader = ({
 					<ProfileNameStyled>{name}</ProfileNameStyled>
 					<ProfileUsernameStyled>@{username}</ProfileUsernameStyled>
 				</ProfileIdentityStyled>
+				{isOwnProfile && onEditProfileToggle ? (
+					<ProfileActionButtonStyled
+						type="button"
+						$isFollowing={false}
+						onClick={onEditProfileToggle}
+					>
+						{isEditingProfile ? "Close editor" : "Edit profile"}
+					</ProfileActionButtonStyled>
+				) : null}
 				{!isOwnProfile && onFollowToggle ? (
 					<ProfileActionStackStyled>
 						<ProfileActionButtonStyled

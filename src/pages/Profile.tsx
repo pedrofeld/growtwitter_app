@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import styled from "styled-components";
 import { ProfileHeader } from "../components/ProfileHeader/ProfileHeader";
 import {
     ProfileInformations,
@@ -35,6 +36,12 @@ interface FollowRelation {
     id: string;
     followerId: string;
     followingId: string;
+}
+
+interface ProfileEditFormState {
+    name: string;
+    username: string;
+    profileImage: string;
 }
 
 interface FeedTweetApi {
@@ -147,6 +154,118 @@ function normalizeFollowRelations(value: unknown): FollowRelation[] {
     });
 }
 
+function isValidHttpUrl(value: string): boolean {
+    try {
+        const url = new URL(value);
+        return url.protocol === "http:" || url.protocol === "https:";
+    } catch {
+        return false;
+    }
+}
+
+function normalizeProfileImageValue(value: unknown): string {
+    return typeof value === "string" ? value.trim() : "";
+}
+
+function getFriendlyProfileUpdateError(rawMessage: string | undefined): string {
+    const normalizedMessage = rawMessage?.toLowerCase() ?? "";
+
+    if (normalizedMessage.includes("username") && (normalizedMessage.includes("already") || normalizedMessage.includes("exist") || normalizedMessage.includes("taken"))) {
+        return "This username is already in use. Please choose another one.";
+    }
+
+    if (normalizedMessage.includes("profileimage") || normalizedMessage.includes("url") || normalizedMessage.includes("invalid")) {
+        return "Please provide a valid image URL (http or https).";
+    }
+
+    return rawMessage?.trim() || "Could not update profile. Please try again.";
+}
+
+function getUpdatedUserPayload(responseData: unknown): Partial<ProfileUser> | null {
+    if (!responseData || typeof responseData !== "object") {
+        return null;
+    }
+
+    const container = responseData as { data?: unknown; user?: unknown };
+
+    const candidateSources = [container.data, container.user, responseData];
+
+    for (const source of candidateSources) {
+        if (!source || typeof source !== "object") {
+            continue;
+        }
+
+        const candidate = source as Partial<ProfileUser>;
+
+        if (typeof candidate.id === "string" || typeof candidate.username === "string" || typeof candidate.name === "string") {
+            return candidate;
+        }
+    }
+
+    return null;
+}
+
+const ProfileEditFormContainer = styled.form`
+    margin: 16px;
+    padding: 16px;
+    border: 1px solid #e1e8ed;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: #ffffff;
+`;
+
+const ProfileEditField = styled.label`
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+`;
+
+const ProfileEditInput = styled.input`
+    border: 1px solid #cfd9de;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 14px;
+
+    &:focus {
+        outline: 2px solid #1d9bf0;
+        outline-offset: 0;
+        border-color: #1d9bf0;
+    }
+`;
+
+const ProfileEditActions = styled.div`
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+`;
+
+const ProfileEditButton = styled.button<{ $variant: "primary" | "secondary" }>`
+    border-radius: 999px;
+    border: 1px solid ${({ $variant }) => ($variant === "primary" ? "#1d9bf0" : "#cfd9de")};
+    background: ${({ $variant }) => ($variant === "primary" ? "#1d9bf0" : "#ffffff")};
+    color: ${({ $variant }) => ($variant === "primary" ? "#ffffff" : "#0f1419")};
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+
+    &:disabled {
+        opacity: 0.65;
+        cursor: not-allowed;
+    }
+`;
+
+const ProfileEditMessage = styled.p<{ $type: "error" | "success" }>`
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.35;
+    color: ${({ $type }) => ($type === "error" ? "#e0245e" : "#177a3f")};
+`;
+
 export const ProfilePage = () => {
     const { user, updateUser } = useAuth();
     const { username } = useParams();
@@ -164,6 +283,15 @@ export const ProfilePage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [profileRefreshToken, setProfileRefreshToken] = useState(0);
+    const [isEditingProfile, setIsEditingProfile] = useState(false);
+    const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+    const [profileEditError, setProfileEditError] = useState<string | null>(null);
+    const [profileEditSuccess, setProfileEditSuccess] = useState<string | null>(null);
+    const [profileEditForm, setProfileEditForm] = useState<ProfileEditFormState>({
+        name: "",
+        username: "",
+        profileImage: "",
+    });
 
     const authenticatedUser = user as ProfileUser | null;
     const isOwnProfile = profileUser?.id
@@ -373,6 +501,22 @@ export const ProfilePage = () => {
         };
     }, [profileUser?.id]);
 
+    useEffect(() => {
+        if (!profileUser || !isOwnProfile) {
+            setProfileEditForm({ name: "", username: "", profileImage: "" });
+            setIsEditingProfile(false);
+            setProfileEditError(null);
+            setProfileEditSuccess(null);
+            return;
+        }
+
+        setProfileEditForm({
+            name: profileUser.name ?? "",
+            username: profileUser.username ?? "",
+            profileImage: profileUser.profileImage ?? profileUser.imgUrl ?? "",
+        });
+    }, [isOwnProfile, profileUser]);
+
     const handleFollowToggle = async () => {
         if (!profileUser?.id || !currentUserId || isOwnProfile || isFollowActionLoading) {
             return;
@@ -457,6 +601,133 @@ export const ProfilePage = () => {
         }
     };
 
+    const handleProfileFormFieldChange = (field: keyof ProfileEditFormState, value: string) => {
+        setProfileEditForm((currentForm) => ({
+            ...currentForm,
+            [field]: value,
+        }));
+
+        if (profileEditError) {
+            setProfileEditError(null);
+        }
+        if (profileEditSuccess) {
+            setProfileEditSuccess(null);
+        }
+    };
+
+    const handleProfileEditToggle = () => {
+        if (isUpdatingProfile || !isOwnProfile || !profileUser) {
+            return;
+        }
+
+        setIsEditingProfile((currentState) => !currentState);
+        setProfileEditError(null);
+        setProfileEditSuccess(null);
+        setProfileEditForm({
+            name: profileUser.name ?? "",
+            username: profileUser.username ?? "",
+            profileImage: profileUser.profileImage ?? profileUser.imgUrl ?? "",
+        });
+    };
+
+    const handleProfileEditCancel = () => {
+        if (!profileUser) {
+            return;
+        }
+
+        setIsEditingProfile(false);
+        setProfileEditError(null);
+        setProfileEditSuccess(null);
+        setProfileEditForm({
+            name: profileUser.name ?? "",
+            username: profileUser.username ?? "",
+            profileImage: profileUser.profileImage ?? profileUser.imgUrl ?? "",
+        });
+    };
+
+    const handleProfileEditSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        if (!profileUser || !isOwnProfile || isUpdatingProfile) {
+            return;
+        }
+
+        const normalizedName = profileEditForm.name.trim();
+        const normalizedUsername = profileEditForm.username.trim();
+        const normalizedProfileImage = profileEditForm.profileImage.trim();
+
+        if (!normalizedName || !normalizedUsername) {
+            setProfileEditError("Name and username are required.");
+            setProfileEditSuccess(null);
+            return;
+        }
+
+        if (normalizedProfileImage && !isValidHttpUrl(normalizedProfileImage)) {
+            setProfileEditError("Please provide a valid image URL (http or https).");
+            setProfileEditSuccess(null);
+            return;
+        }
+
+        setIsUpdatingProfile(true);
+        setProfileEditError(null);
+        setProfileEditSuccess(null);
+
+        try {
+            const response = await userService.updateProfile(
+                profileUser.id,
+                normalizedName,
+                normalizedUsername,
+                undefined,
+                undefined,
+                normalizedProfileImage,
+            );
+
+            if (!response.ok) {
+                setProfileEditError(getFriendlyProfileUpdateError(response.message));
+                return;
+            }
+
+            const updatedPayload = getUpdatedUserPayload(response.data);
+            const nextProfileImage = normalizeProfileImageValue(updatedPayload?.profileImage)
+                || normalizeProfileImageValue(updatedPayload?.imgUrl)
+                || normalizedProfileImage;
+
+            const nextProfileUser: ProfileUser = {
+                ...profileUser,
+                ...updatedPayload,
+                name: updatedPayload?.name ?? normalizedName,
+                username: updatedPayload?.username ?? normalizedUsername,
+                profileImage: nextProfileImage,
+                imgUrl: nextProfileImage,
+            };
+
+            setProfileUser(nextProfileUser);
+            setProfileEditSuccess("Profile updated successfully.");
+            setIsEditingProfile(false);
+
+            updateUser((currentUser) => {
+                if (!currentUser || currentUser.id !== profileUser.id) {
+                    return currentUser;
+                }
+
+                return {
+                    ...currentUser,
+                    name: nextProfileUser.name,
+                    username: nextProfileUser.username,
+                    imgUrl: nextProfileUser.imgUrl || nextProfileUser.profileImage || "",
+                };
+            });
+
+            if (username && nextProfileUser.username && username.toLowerCase() !== nextProfileUser.username.toLowerCase()) {
+                navigate(`/profile/${nextProfileUser.username}`, { replace: true });
+            }
+        } catch {
+            setProfileEditError("Could not update profile. Please try again.");
+        } finally {
+            setIsUpdatingProfile(false);
+        }
+    };
+
     const visibleTweets = useMemo(() => {
         if (!profileUser?.id) return [];
 
@@ -490,8 +761,66 @@ export const ProfilePage = () => {
                 isFollowing={isFollowing}
                 isFollowActionLoading={isFollowActionLoading}
                 onFollowToggle={handleFollowToggle}
+                onEditProfileToggle={handleProfileEditToggle}
+                isEditingProfile={isEditingProfile}
                 actionMessage={followActionError}
             />
+
+            {isOwnProfile && isEditingProfile ? (
+                <ProfileEditFormContainer onSubmit={handleProfileEditSubmit}>
+                    <ProfileEditField>
+                        Name
+                        <ProfileEditInput
+                            type="text"
+                            value={profileEditForm.name}
+                            onChange={(event) => handleProfileFormFieldChange("name", event.target.value)}
+                            placeholder="Your name"
+                            maxLength={80}
+                            required
+                        />
+                    </ProfileEditField>
+
+                    <ProfileEditField>
+                        Username
+                        <ProfileEditInput
+                            type="text"
+                            value={profileEditForm.username}
+                            onChange={(event) => handleProfileFormFieldChange("username", event.target.value)}
+                            placeholder="yourusername"
+                            maxLength={30}
+                            required
+                        />
+                    </ProfileEditField>
+
+                    <ProfileEditField>
+                        Profile image URL
+                        <ProfileEditInput
+                            type="url"
+                            value={profileEditForm.profileImage}
+                            onChange={(event) => handleProfileFormFieldChange("profileImage", event.target.value)}
+                            placeholder="https://example.com/avatar.jpg"
+                        />
+                    </ProfileEditField>
+
+                    {profileEditError ? <ProfileEditMessage $type="error">{profileEditError}</ProfileEditMessage> : null}
+                    {profileEditSuccess ? <ProfileEditMessage $type="success">{profileEditSuccess}</ProfileEditMessage> : null}
+
+                    <ProfileEditActions>
+                        <ProfileEditButton type="button" $variant="secondary" onClick={handleProfileEditCancel} disabled={isUpdatingProfile}>
+                            Cancel
+                        </ProfileEditButton>
+                        <ProfileEditButton type="submit" $variant="primary" disabled={isUpdatingProfile}>
+                            {isUpdatingProfile ? "Saving..." : "Save changes"}
+                        </ProfileEditButton>
+                    </ProfileEditActions>
+                </ProfileEditFormContainer>
+            ) : null}
+
+            {isOwnProfile && !isEditingProfile && profileEditSuccess ? (
+                <ProfileEditFormContainer as="div">
+                    <ProfileEditMessage $type="success">{profileEditSuccess}</ProfileEditMessage>
+                </ProfileEditFormContainer>
+            ) : null}
 
             <ProfileInformations
                 activeTab={activeTab}
