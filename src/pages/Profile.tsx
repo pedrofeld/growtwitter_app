@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { ProfileHeader } from "../components/ProfileHeader/ProfileHeader";
 import {
     ProfileInformations,
@@ -113,7 +113,8 @@ function normalizeFollowRelations(value: unknown): FollowRelation[] {
 
 export const ProfilePage = () => {
     const { user, updateUser } = useAuth();
-    const { userId } = useParams();
+    const { username } = useParams();
+    const navigate = useNavigate();
     const [profileUser, setProfileUser] = useState<ProfileUser | null>(null);
     const [followersCount, setFollowersCount] = useState(0);
     const [isFollowing, setIsFollowing] = useState(false);
@@ -127,14 +128,17 @@ export const ProfilePage = () => {
     const [error, setError] = useState<string | null>(null);
 
     const authenticatedUser = user as ProfileUser | null;
-    const isOwnProfile = !userId || userId === authenticatedUser?.id;
+    const isOwnProfile = profileUser?.id
+        ? profileUser.id === authenticatedUser?.id
+        : !username;
     const currentUserId = authenticatedUser?.id;
 
     useEffect(() => {
         async function loadProfileTweets() {
-            const targetProfileId = userId || authenticatedUser?.id;
+            const profileIdentifier = username?.trim();
+            let targetProfileId = authenticatedUser?.id;
 
-            if (!targetProfileId) {
+            if (!targetProfileId && !profileIdentifier) {
                 setProfileUser(null);
                 setFollowersCount(0);
                 setIsFollowing(false);
@@ -154,7 +158,7 @@ export const ProfilePage = () => {
                 const allFollowRelations = followsResponse.ok ? normalizeFollowRelations(followsResponse.data) : [];
                 setFollowRelations(allFollowRelations);
 
-                if (userId) {
+                if (profileIdentifier) {
                     const usersResponse = await userService.listUsers();
 
                     if (!usersResponse.ok) {
@@ -165,7 +169,12 @@ export const ProfilePage = () => {
                     }
 
                     const allUsers = Array.isArray(usersResponse.data) ? usersResponse.data : usersResponse.data?.data ?? [];
-                    const matchedUser = (allUsers as ProfileUser[]).find((candidate) => candidate.id === userId) ?? null;
+                    const normalizedIdentifier = profileIdentifier.toLowerCase();
+                    const usersList = allUsers as ProfileUser[];
+
+                    const matchedUser = usersList.find(
+                        (candidate) => candidate.username?.toLowerCase() === normalizedIdentifier,
+                    ) ?? usersList.find((candidate) => candidate.id === profileIdentifier) ?? null;
 
                     if (!matchedUser) {
                         setError("Profile not found");
@@ -177,6 +186,13 @@ export const ProfilePage = () => {
                         setTweets([]);
                         return;
                     }
+
+                    // Backward compatibility for legacy links that still point to /profile/:id.
+                    if (matchedUser.id === profileIdentifier && matchedUser.username) {
+                        navigate(`/profile/${matchedUser.username}`, { replace: true });
+                    }
+
+                    targetProfileId = matchedUser.id;
 
                     setProfileUser(matchedUser);
                     setFollowersCount(
@@ -191,6 +207,12 @@ export const ProfilePage = () => {
                         allFollowRelations.filter((relation) => relation.followingId === authenticatedUser?.id).length,
                     );
                     setIsFollowing(false);
+                }
+
+                if (!targetProfileId) {
+                    setError("Profile not found");
+                    setTweets([]);
+                    return;
                 }
 
                 const response = await tweetService.listTweets();
@@ -246,7 +268,7 @@ export const ProfilePage = () => {
         }
 
         void loadProfileTweets();
-    }, [user, userId]);
+    }, [authenticatedUser, currentUserId, navigate, username]);
 
     useEffect(() => {
         function handleTweetCreated(event: Event) {

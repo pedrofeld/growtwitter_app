@@ -142,10 +142,10 @@ export const TweetCard = ({
   });
   const [isLiking, setIsLiking] = useState(false);
 
-  const authorProfilePath = tweet.author.id
+  const authorProfilePath = tweet.author.username
     ? tweet.author.id === user?.id
       ? "/profile"
-      : `/profile/${tweet.author.id}`
+      : `/profile/${tweet.author.username}`
     : undefined;
 
   function handleAuthorNavigationClick(event: MouseEvent<HTMLAnchorElement>) {

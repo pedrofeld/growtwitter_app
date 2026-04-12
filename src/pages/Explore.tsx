@@ -160,7 +160,7 @@ export const ExplorePage = () => {
                 <UserResultsListStyled>
                     {peopleResults.map((userResult) => (
                         <UserResultItemStyled key={userResult.id}>
-                            <UserResultCardStyled type="button" onClick={() => navigate(`/profile/${userResult.id}`)}>
+                            <UserResultCardStyled type="button" onClick={() => navigate(`/profile/${userResult.username}`)}>
                                 <UserAvatarStyled src={userResult.profileImage} alt={`Photo of ${userResult.username}`} />
                                 <div>
                                     <UserNameStyled>{userResult.name}</UserNameStyled>
