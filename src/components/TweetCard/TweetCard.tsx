@@ -1,10 +1,11 @@
-import { useMemo, useState, type MouseEvent } from "react";
+import { useMemo, useState, type KeyboardEvent, type MouseEvent } from "react";
 import { FaHeart, FaRegComment, FaRegHeart } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../config/context/AuthContext";
 import likeService from "../../config/services/like.service";
 import { TweetHeader } from "../TweetHeader/TweetHeader";
 import {
+  AuthorAvatarLinkStyled,
   LikeButtonStyled,
   MetaRowStyled,
   MetricStyled,
@@ -141,6 +142,25 @@ export const TweetCard = ({
   });
   const [isLiking, setIsLiking] = useState(false);
 
+  const authorProfilePath = tweet.author.id
+    ? tweet.author.id === user?.id
+      ? "/profile"
+      : `/profile/${tweet.author.id}`
+    : undefined;
+
+  function handleAuthorNavigationClick(event: MouseEvent<HTMLAnchorElement>) {
+    event.stopPropagation();
+  }
+
+  function handleAuthorNavigationKeyDown(event: KeyboardEvent<HTMLAnchorElement>) {
+    event.stopPropagation();
+
+    if (event.key === " " || event.key === "Spacebar") {
+      event.preventDefault();
+      event.currentTarget.click();
+    }
+  }
+
   async function handleLikeClick(event: MouseEvent<HTMLButtonElement>) {
     event.stopPropagation();
 
@@ -208,11 +228,25 @@ export const TweetCard = ({
       aria-label={`Open tweet from @${tweet.author.username}`}
     >
       <TweetBodyLayoutStyled>
-        <ProfileImageStyled
-          $sizeVariant={sizeVariant}
-          src={tweet.author.profileImage}
-          alt={`Photo of ${tweet.author.username}`}
-        />
+        {authorProfilePath ? (
+          <AuthorAvatarLinkStyled
+            to={authorProfilePath}
+            onClick={handleAuthorNavigationClick}
+            onKeyDown={handleAuthorNavigationKeyDown}
+          >
+            <ProfileImageStyled
+              $sizeVariant={sizeVariant}
+              src={tweet.author.profileImage}
+              alt={`Photo of ${tweet.author.username}`}
+            />
+          </AuthorAvatarLinkStyled>
+        ) : (
+          <ProfileImageStyled
+            $sizeVariant={sizeVariant}
+            src={tweet.author.profileImage}
+            alt={`Photo of ${tweet.author.username}`}
+          />
+        )}
 
         <TweetMainContentStyled>
           <TweetHeader
@@ -220,6 +254,9 @@ export const TweetCard = ({
             username={tweet.author.username}
             timeLabel={timeLabel}
             isExpanded={sizeVariant === "expanded"}
+            authorProfilePath={authorProfilePath}
+            onAuthorClick={handleAuthorNavigationClick}
+            onAuthorKeyDown={handleAuthorNavigationKeyDown}
           />
 
           {tweet.parentId && <ReplyTagStyled>Replying to a tweet</ReplyTagStyled>}

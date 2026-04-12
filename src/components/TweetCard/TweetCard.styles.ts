@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { Link } from "react-router-dom";
 
 interface TweetCardStyledProps {
   $isClickable: boolean;
@@ -32,6 +33,18 @@ export const ProfileImageStyled = styled.img<ProfileImageStyledProps>`
   border-radius: 999px;
   object-fit: cover;
   flex-shrink: 0;
+`;
+
+export const AuthorAvatarLinkStyled = styled(Link)`
+  display: inline-flex;
+  flex-shrink: 0;
+  text-decoration: none;
+
+  &:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+    border-radius: 999px;
+  }
 `;
 
 export const TweetMainContentStyled = styled.div`
