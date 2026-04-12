@@ -12,6 +12,10 @@ import {
     prependUniqueTweet,
     TWEET_CREATED_EVENT,
 } from "../config/events/tweetCreatedEvent";
+import {
+    isTweetLikeChangedDetail,
+    TWEET_LIKE_CHANGED_EVENT,
+} from "../config/events/tweetLikeChangedEvent";
 import followService from "../config/services/follow.service";
 import userService from "../config/services/user.service";
 import tweetService from "../config/services/tweet.service";
@@ -44,11 +48,15 @@ interface FeedTweetApi {
     };
     content: string;
     createdAt: string;
-    likes?: Array<{ id?: string; userId?: string } | string>;
+    likes?: Array<{ id?: string; userId?: string; likeId?: string; _id?: string } | string>;
     likesCount?: number;
     replies?: unknown[];
     repliesCount?: number;
     parentId?: string;
+}
+
+interface FeedTweetApiWithReplies extends FeedTweetApi {
+    replies?: FeedTweetApiWithReplies[];
 }
 
 interface TweetsPayload {
@@ -77,7 +85,7 @@ function formatJoinedDate(value: unknown): string {
 }
 
 function hasUserLike(
-    likes: Array<{ id?: string; userId?: string } | string> | undefined,
+    likes: Array<{ id?: string; userId?: string; likeId?: string; _id?: string } | string> | undefined,
     currentUserId: string,
 ): boolean {
     if (!likes?.length) return false;
@@ -89,6 +97,34 @@ function hasUserLike(
 
         return like.id === currentUserId || like.userId === currentUserId;
     });
+}
+
+function dedupeTweetsById(tweets: ProfileTweet[]): ProfileTweet[] {
+    const mapById = new Map<string, ProfileTweet>();
+
+    tweets.forEach((tweet) => {
+        mapById.set(tweet.id, tweet);
+    });
+
+    return Array.from(mapById.values());
+}
+
+function flattenTweetsWithReplies(tweets: FeedTweetApiWithReplies[]): FeedTweetApiWithReplies[] {
+    const flattenedTweets: FeedTweetApiWithReplies[] = [];
+
+    function walk(nodes: FeedTweetApiWithReplies[]) {
+        nodes.forEach((node) => {
+            flattenedTweets.push(node);
+
+            if (Array.isArray(node.replies) && node.replies.length > 0) {
+                walk(node.replies);
+            }
+        });
+    }
+
+    walk(tweets);
+
+    return flattenedTweets;
 }
 
 function normalizeFollowRelations(value: unknown): FollowRelation[] {
@@ -124,8 +160,10 @@ export const ProfilePage = () => {
 
     const [activeTab, setActiveTab] = useState<ProfileTab>("tweets");
     const [tweets, setTweets] = useState<ProfileTweet[]>([]);
+    const [likedTweets, setLikedTweets] = useState<ProfileTweet[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [profileRefreshToken, setProfileRefreshToken] = useState(0);
 
     const authenticatedUser = user as ProfileUser | null;
     const isOwnProfile = profileUser?.id
@@ -145,6 +183,7 @@ export const ProfilePage = () => {
                 setFollowActionError(null);
                 setFollowRelations([]);
                 setTweets([]);
+                setLikedTweets([]);
                 setLoading(false);
                 return;
             }
@@ -165,6 +204,7 @@ export const ProfilePage = () => {
                         setError("Error loading profile");
                         setProfileUser(null);
                         setTweets([]);
+                        setLikedTweets([]);
                         return;
                     }
 
@@ -184,6 +224,7 @@ export const ProfilePage = () => {
                         setFollowActionError(null);
                         setFollowRelations(allFollowRelations);
                         setTweets([]);
+                        setLikedTweets([]);
                         return;
                     }
 
@@ -212,23 +253,31 @@ export const ProfilePage = () => {
                 if (!targetProfileId) {
                     setError("Profile not found");
                     setTweets([]);
+                    setLikedTweets([]);
                     return;
                 }
+
+                const resolvedProfileId = targetProfileId;
 
                 const response = await tweetService.listTweets();
 
                 if (!response.ok) {
                     setError("Error loading tweets");
                     setTweets([]);
+                    setLikedTweets([]);
                     return;
                 }
 
-                const payload = (response.data ?? []) as FeedTweetApi[] | TweetsPayload;
-                const allTweets = Array.isArray(payload) ? payload : payload.data;
+                const payload = (response.data ?? []) as FeedTweetApiWithReplies[] | TweetsPayload;
+                const allTweets = (Array.isArray(payload) ? payload : payload.data) as FeedTweetApiWithReplies[];
+                const flattenedTweets = flattenTweetsWithReplies(allTweets);
 
-                const userTweets: ProfileTweet[] = allTweets
-                    .filter((tweet) => tweet?.user?.id === targetProfileId)
+                const normalizedTweets = flattenedTweets
                     .map((tweet) => {
+                        if (!tweet?.id || !tweet?.user?.id) {
+                            return null;
+                        }
+
                         const profileImage = tweet.user.profileImage || tweet.user.imgUrl || "";
 
                         return {
@@ -246,15 +295,27 @@ export const ProfilePage = () => {
                             likesCount: tweet.likesCount ?? (tweet.likes?.length ?? 0),
                             repliesCount: tweet.repliesCount ?? (tweet.replies?.length ?? 0),
                             parentId: tweet.parentId,
-                        };
-                    });
+                        } as ProfileTweet;
+                    })
+                    .filter((tweet): tweet is ProfileTweet => tweet !== null);
+
+                const userTweets = dedupeTweetsById(
+                    normalizedTweets.filter((tweet) => tweet.author.id === resolvedProfileId),
+                );
+                const userLikedTweets = normalizedTweets.filter((tweet) => hasUserLike(tweet.likes, resolvedProfileId));
 
                 userTweets.sort(
                     (firstTweet, secondTweet) =>
                         new Date(secondTweet.createdAt).getTime() - new Date(firstTweet.createdAt).getTime(),
                 );
 
+                const sortedLikedTweets = dedupeTweetsById(userLikedTweets).sort(
+                    (firstTweet, secondTweet) =>
+                        new Date(secondTweet.createdAt).getTime() - new Date(firstTweet.createdAt).getTime(),
+                );
+
                 setTweets(userTweets);
+                setLikedTweets(sortedLikedTweets);
             } catch {
                 setError("Error loading tweets");
                 setFollowersCount(0);
@@ -262,13 +323,32 @@ export const ProfilePage = () => {
                 setFollowActionError(null);
                 setFollowRelations([]);
                 setTweets([]);
+                setLikedTweets([]);
             } finally {
                 setLoading(false);
             }
         }
 
         void loadProfileTweets();
-    }, [authenticatedUser, currentUserId, navigate, username]);
+    }, [authenticatedUser, currentUserId, navigate, profileRefreshToken, username]);
+
+    useEffect(() => {
+        function handleTweetLikeChanged(event: Event) {
+            const customEvent = event as CustomEvent<unknown>;
+
+            if (!isTweetLikeChangedDetail(customEvent.detail)) {
+                return;
+            }
+
+            setProfileRefreshToken((currentToken) => currentToken + 1);
+        }
+
+        window.addEventListener(TWEET_LIKE_CHANGED_EVENT, handleTweetLikeChanged);
+
+        return () => {
+            window.removeEventListener(TWEET_LIKE_CHANGED_EVENT, handleTweetLikeChanged);
+        };
+    }, []);
 
     useEffect(() => {
         function handleTweetCreated(event: Event) {
@@ -388,8 +468,8 @@ export const ProfilePage = () => {
             return tweets.filter((tweet) => !!tweet.parentId);
         }
 
-        return tweets.filter((tweet) => hasUserLike(tweet.likes, profileUser.id));
-    }, [activeTab, tweets, profileUser?.id]);
+        return likedTweets;
+    }, [activeTab, likedTweets, tweets]);
 
     const joinedDateValue = profileUser?.createdAt ?? tweets[tweets.length - 1]?.createdAt;
     const profileFollowingCount = followRelations.filter((relation) => relation.followerId === profileUser?.id).length;

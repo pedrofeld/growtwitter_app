@@ -10,7 +10,7 @@ export type ProfileTab = "tweets" | "replies" | "likes";
 
 export interface ProfileTweet extends FeedTweetCardData {
 	createdAt: string;
-	likes?: Array<{ id?: string; userId?: string } | string>;
+	likes?: Array<{ id?: string; userId?: string; likeId?: string; _id?: string } | string>;
 }
 
 interface ProfileInformationsProps {

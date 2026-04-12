@@ -2,6 +2,7 @@ import { useMemo, useState, type KeyboardEvent, type MouseEvent } from "react";
 import { FaHeart, FaRegComment, FaRegHeart } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../config/context/AuthContext";
+import { emitTweetLikeChangedEvent } from "../../config/events/tweetLikeChangedEvent";
 import likeService from "../../config/services/like.service";
 import { TweetHeader } from "../TweetHeader/TweetHeader";
 import {
@@ -185,6 +186,12 @@ export const TweetCard = ({
         setIsLiked(false);
         setCurrentLikeId(undefined);
         setLikesCount((previousCount) => Math.max(previousCount - 1, 0));
+        emitTweetLikeChangedEvent({
+          tweetId: tweet.id,
+          userId: requestUserId,
+          isLiked: false,
+          likeId: currentLikeId,
+        });
         return;
       }
 
@@ -199,6 +206,12 @@ export const TweetCard = ({
       setIsLiked(true);
       setCurrentLikeId(responseLikeId);
       setLikesCount((previousCount) => previousCount + 1);
+      emitTweetLikeChangedEvent({
+        tweetId: tweet.id,
+        userId: requestUserId,
+        isLiked: true,
+        likeId: responseLikeId,
+      });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Error processing like";
       console.error("Like action failed", {
