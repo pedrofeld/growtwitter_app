@@ -9,6 +9,7 @@ import {
   LoginForm as StyledLoginForm,
   LoginFormGroup,
   LoginFormButton,
+  LoginFormSecondaryButton,
 } from "./styles";
 
 export const LoginForm = () => {
@@ -87,6 +88,14 @@ export const LoginForm = () => {
           <LoginFormButton type="submit" disabled={loading}>
             {loading ? "Loanding..." : "Login"}
           </LoginFormButton>
+
+          <LoginFormSecondaryButton
+            type="button"
+            onClick={() => navigate("/register")}
+            disabled={loading}
+          >
+            Create account
+          </LoginFormSecondaryButton>
         </StyledLoginForm>
       </LoginFormBox>
     </LoginFormContainer>

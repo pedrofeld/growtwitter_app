@@ -95,3 +95,26 @@ export const LoginFormButton = styled.button`
     opacity: 0.7;
   }
 `;
+
+export const LoginFormSecondaryButton = styled.button`
+  padding: 12px;
+  background-color: transparent;
+  color: #1da1f2;
+  border: 1px solid #1da1f2;
+  border-radius: 20px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+
+  &:hover:not(:disabled) {
+    background-color: #e8f5fe;
+  }
+
+  &:disabled {
+    border-color: #9abed6;
+    color: #9abed6;
+    cursor: not-allowed;
+    opacity: 0.8;
+  }
+`;
