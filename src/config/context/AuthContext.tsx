@@ -42,6 +42,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (login: string, password: string) => Promise<void>;
   logout: () => void;
+  updateUser: (updater: (currentUser: User | null) => User | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -130,13 +131,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem("authUser");
   };
 
+  const updateUser = (updater: (currentUser: User | null) => User | null) => {
+    setUser((currentUser) => {
+      const updatedUser = updater(currentUser);
+
+      if (updatedUser) {
+        localStorage.setItem("authUser", JSON.stringify(updatedUser));
+      } else {
+        localStorage.removeItem("authUser");
+      }
+
+      return updatedUser;
+    });
+  };
+
   const token = localStorage.getItem("authToken");
   const normalizedToken = normalizeTokenValue(token);
   const isAuthenticated = !!user && !!normalizedToken && !isJwtExpired(normalizedToken);
 
   return (
     <AuthContext.Provider
-      value={{ user, isAuthenticated, login, logout }}
+      value={{ user, isAuthenticated, login, logout, updateUser }}
     >
       {children}
     </AuthContext.Provider>

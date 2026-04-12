@@ -12,6 +12,7 @@ import {
     prependUniqueTweet,
     TWEET_CREATED_EVENT,
 } from "../config/events/tweetCreatedEvent";
+import followService from "../config/services/follow.service";
 import userService from "../config/services/user.service";
 import tweetService from "../config/services/tweet.service";
 
@@ -24,6 +25,12 @@ interface ProfileUser {
     followers?: string[];
     following?: string[];
     createdAt?: string;
+}
+
+interface FollowRelation {
+    id: string;
+    followerId: string;
+    followingId: string;
 }
 
 interface FeedTweetApi {
@@ -84,23 +91,55 @@ function hasUserLike(
     });
 }
 
+function normalizeFollowRelations(value: unknown): FollowRelation[] {
+    const rawRelations = Array.isArray(value) ? value : (value as { data?: unknown })?.data;
+
+    if (!Array.isArray(rawRelations)) {
+        return [];
+    }
+
+    return rawRelations.filter((relation): relation is FollowRelation => {
+        if (!relation || typeof relation !== "object") {
+            return false;
+        }
+
+        const candidate = relation as Partial<FollowRelation>;
+
+        return typeof candidate.id === "string"
+            && typeof candidate.followerId === "string"
+            && typeof candidate.followingId === "string";
+    });
+}
+
 export const ProfilePage = () => {
-    const { user } = useAuth();
+    const { user, updateUser } = useAuth();
     const { userId } = useParams();
     const [profileUser, setProfileUser] = useState<ProfileUser | null>(null);
+    const [followersCount, setFollowersCount] = useState(0);
+    const [isFollowing, setIsFollowing] = useState(false);
+    const [isFollowActionLoading, setIsFollowActionLoading] = useState(false);
+    const [followActionError, setFollowActionError] = useState<string | null>(null);
+    const [followRelations, setFollowRelations] = useState<FollowRelation[]>([]);
 
     const [activeTab, setActiveTab] = useState<ProfileTab>("tweets");
     const [tweets, setTweets] = useState<ProfileTweet[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const authenticatedUser = user as ProfileUser | null;
+    const isOwnProfile = !userId || userId === authenticatedUser?.id;
+    const currentUserId = authenticatedUser?.id;
+
     useEffect(() => {
         async function loadProfileTweets() {
-            const authenticatedUser = user as ProfileUser | null;
             const targetProfileId = userId || authenticatedUser?.id;
 
             if (!targetProfileId) {
                 setProfileUser(null);
+                setFollowersCount(0);
+                setIsFollowing(false);
+                setFollowActionError(null);
+                setFollowRelations([]);
                 setTweets([]);
                 setLoading(false);
                 return;
@@ -108,8 +147,13 @@ export const ProfilePage = () => {
 
             setLoading(true);
             setError(null);
+            setFollowActionError(null);
 
             try {
+                const followsResponse = await followService.listFollows();
+                const allFollowRelations = followsResponse.ok ? normalizeFollowRelations(followsResponse.data) : [];
+                setFollowRelations(allFollowRelations);
+
                 if (userId) {
                     const usersResponse = await userService.listUsers();
 
@@ -126,13 +170,27 @@ export const ProfilePage = () => {
                     if (!matchedUser) {
                         setError("Profile not found");
                         setProfileUser(null);
+                        setFollowersCount(0);
+                        setIsFollowing(false);
+                        setFollowActionError(null);
+                        setFollowRelations(allFollowRelations);
                         setTweets([]);
                         return;
                     }
 
                     setProfileUser(matchedUser);
+                    setFollowersCount(
+                        allFollowRelations.filter((relation) => relation.followingId === matchedUser.id).length,
+                    );
+                    setIsFollowing(
+                        Boolean(currentUserId && allFollowRelations.some((relation) => relation.followerId === currentUserId && relation.followingId === matchedUser.id)),
+                    );
                 } else {
                     setProfileUser(authenticatedUser);
+                    setFollowersCount(
+                        allFollowRelations.filter((relation) => relation.followingId === authenticatedUser?.id).length,
+                    );
+                    setIsFollowing(false);
                 }
 
                 const response = await tweetService.listTweets();
@@ -177,6 +235,10 @@ export const ProfilePage = () => {
                 setTweets(userTweets);
             } catch {
                 setError("Error loading tweets");
+                setFollowersCount(0);
+                setIsFollowing(false);
+                setFollowActionError(null);
+                setFollowRelations([]);
                 setTweets([]);
             } finally {
                 setLoading(false);
@@ -209,6 +271,90 @@ export const ProfilePage = () => {
         };
     }, [profileUser?.id]);
 
+    const handleFollowToggle = async () => {
+        if (!profileUser?.id || !currentUserId || isOwnProfile || isFollowActionLoading) {
+            return;
+        }
+
+        setIsFollowActionLoading(true);
+        setFollowActionError(null);
+
+        try {
+            const response = isFollowing
+                ? await followService.unfollowUser(currentUserId, profileUser.id)
+                : await followService.followUser(currentUserId, profileUser.id);
+
+            if (!response.ok) {
+                setFollowActionError(isFollowing ? "Error unfollowing user" : "Error following user");
+                return;
+            }
+
+            setIsFollowing((current) => !current);
+            setFollowersCount((current) => (isFollowing ? Math.max(0, current - 1) : current + 1));
+            updateUser((currentUser) => {
+                if (!currentUser) {
+                    return currentUser;
+                }
+
+                const currentFollowing = currentUser.following ?? [];
+                const currentFollowers = currentUser.followers ?? [];
+
+                const nextFollowing = isFollowing
+                    ? currentFollowing.filter((followedUserId) => followedUserId !== profileUser.id)
+                    : currentFollowing.includes(profileUser.id)
+                        ? currentFollowing
+                        : [...currentFollowing, profileUser.id];
+
+                const nextFollowers = isFollowing
+                    ? currentFollowers
+                    : currentFollowers;
+
+                return {
+                    ...currentUser,
+                    following: nextFollowing,
+                    followers: nextFollowers,
+                };
+            });
+            if (profileUser?.id) {
+                setFollowRelations((currentRelations) => {
+                    const nextRelations = isFollowing
+                        ? currentRelations.filter((relation) => !(relation.followerId === currentUserId && relation.followingId === profileUser.id))
+                        : currentRelations.some((relation) => relation.followerId === currentUserId && relation.followingId === profileUser.id)
+                            ? currentRelations
+                            : [...currentRelations, {
+                                id: `${currentUserId}-${profileUser.id}`,
+                                followerId: currentUserId,
+                                followingId: profileUser.id,
+                            }];
+
+                    return nextRelations;
+                });
+
+                setProfileUser((currentProfile) => {
+                    if (!currentProfile) {
+                        return currentProfile;
+                    }
+
+                    const currentFollowers = currentProfile.followers ?? [];
+                    const updatedFollowers = isFollowing
+                        ? currentFollowers.filter((followerId) => followerId !== currentUserId)
+                        : currentFollowers.includes(currentUserId)
+                            ? currentFollowers
+                            : [...currentFollowers, currentUserId];
+
+                    return {
+                        ...currentProfile,
+                        followers: updatedFollowers,
+                    };
+                });
+            }
+        } catch {
+            setFollowActionError(isFollowing ? "Error unfollowing user" : "Error following user");
+        } finally {
+            setIsFollowActionLoading(false);
+        }
+    };
+
     const visibleTweets = useMemo(() => {
         if (!profileUser?.id) return [];
 
@@ -224,6 +370,7 @@ export const ProfilePage = () => {
     }, [activeTab, tweets, profileUser?.id]);
 
     const joinedDateValue = profileUser?.createdAt ?? tweets[tweets.length - 1]?.createdAt;
+    const profileFollowingCount = followRelations.filter((relation) => relation.followerId === profileUser?.id).length;
 
     if (loading) return <p>Loading...</p>;
     if (error) return <p>{error}</p>;
@@ -235,8 +382,13 @@ export const ProfilePage = () => {
                 username={profileUser?.username ?? "username"}
                 profileImage={profileUser?.imgUrl || profileUser?.profileImage || ""}
                 joinedAt={formatJoinedDate(joinedDateValue)}
-                followingCount={profileUser?.following?.length ?? 0}
-                followersCount={profileUser?.followers?.length ?? 0}
+                followingCount={profileFollowingCount}
+                followersCount={followersCount}
+                isOwnProfile={isOwnProfile}
+                isFollowing={isFollowing}
+                isFollowActionLoading={isFollowActionLoading}
+                onFollowToggle={handleFollowToggle}
+                actionMessage={followActionError}
             />
 
             <ProfileInformations
