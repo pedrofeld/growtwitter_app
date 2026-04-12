@@ -33,6 +33,10 @@ export const routes = createBrowserRouter([
         element: <ProfilePage />,
       },
       {
+        path: "profile/:userId",
+        element: <ProfilePage />,
+      },
+      {
         path: "tweet/:tweetId",
         element: <TweetDetailPage />,
       },

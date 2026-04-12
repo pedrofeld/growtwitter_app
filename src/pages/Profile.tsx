@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useParams } from "react-router-dom";
 import { ProfileHeader } from "../components/ProfileHeader/ProfileHeader";
 import {
     ProfileInformations,
@@ -11,6 +12,7 @@ import {
     prependUniqueTweet,
     TWEET_CREATED_EVENT,
 } from "../config/events/tweetCreatedEvent";
+import userService from "../config/services/user.service";
 import tweetService from "../config/services/tweet.service";
 
 interface ProfileUser {
@@ -84,7 +86,8 @@ function hasUserLike(
 
 export const ProfilePage = () => {
     const { user } = useAuth();
-    const profileUser = user as ProfileUser | null;
+    const { userId } = useParams();
+    const [profileUser, setProfileUser] = useState<ProfileUser | null>(null);
 
     const [activeTab, setActiveTab] = useState<ProfileTab>("tweets");
     const [tweets, setTweets] = useState<ProfileTweet[]>([]);
@@ -93,7 +96,11 @@ export const ProfilePage = () => {
 
     useEffect(() => {
         async function loadProfileTweets() {
-            if (!profileUser?.id) {
+            const authenticatedUser = user as ProfileUser | null;
+            const targetProfileId = userId || authenticatedUser?.id;
+
+            if (!targetProfileId) {
+                setProfileUser(null);
                 setTweets([]);
                 setLoading(false);
                 return;
@@ -103,6 +110,31 @@ export const ProfilePage = () => {
             setError(null);
 
             try {
+                if (userId) {
+                    const usersResponse = await userService.listUsers();
+
+                    if (!usersResponse.ok) {
+                        setError("Error loading profile");
+                        setProfileUser(null);
+                        setTweets([]);
+                        return;
+                    }
+
+                    const allUsers = Array.isArray(usersResponse.data) ? usersResponse.data : usersResponse.data?.data ?? [];
+                    const matchedUser = (allUsers as ProfileUser[]).find((candidate) => candidate.id === userId) ?? null;
+
+                    if (!matchedUser) {
+                        setError("Profile not found");
+                        setProfileUser(null);
+                        setTweets([]);
+                        return;
+                    }
+
+                    setProfileUser(matchedUser);
+                } else {
+                    setProfileUser(authenticatedUser);
+                }
+
                 const response = await tweetService.listTweets();
 
                 if (!response.ok) {
@@ -115,7 +147,7 @@ export const ProfilePage = () => {
                 const allTweets = Array.isArray(payload) ? payload : payload.data;
 
                 const userTweets: ProfileTweet[] = allTweets
-                    .filter((tweet) => tweet?.user?.id === profileUser.id)
+                    .filter((tweet) => tweet?.user?.id === targetProfileId)
                     .map((tweet) => {
                         const profileImage = tweet.user.profileImage || tweet.user.imgUrl || "";
 
@@ -152,7 +184,7 @@ export const ProfilePage = () => {
         }
 
         void loadProfileTweets();
-    }, [profileUser?.id]);
+    }, [user, userId]);
 
     useEffect(() => {
         function handleTweetCreated(event: Event) {

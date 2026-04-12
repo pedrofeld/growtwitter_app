@@ -3,6 +3,18 @@ import type { ResponseDto } from "../dtos/response.dto";
 import apiService, { api } from "./api.service";
 
 class UserService {
+  public async listUsers(): Promise<ResponseDto> {
+    try {
+      const result = await api.get(`/users`);
+      return {
+        ok: true,
+        data: result.data,
+      };
+    } catch (error: any) {
+      return apiService.handleError(error);
+    }
+  }
+
   public async register(
     name: string,
     username: string,
