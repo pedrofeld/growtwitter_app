@@ -58,7 +58,7 @@ export const LoginForm = () => {
         <StyledLoginForm onSubmit={handleSubmit}>
           {/* Email field */}
           <LoginFormGroup>
-            <label htmlFor="email">Email:</label>
+            <label htmlFor="email">Email/username:</label>
             <input
               id="login"
               type="text"
