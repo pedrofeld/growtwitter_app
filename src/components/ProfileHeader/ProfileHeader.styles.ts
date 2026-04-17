@@ -90,7 +90,7 @@ export const ProfileActionMessageStyled = styled.p`
 `;
 
 export const ProfileMetaStyled = styled.p`
-	margin: 12px 0 0;
+	margin: 12px 16px 0;
 	color: var(--app-text-muted);
 	font-size: 14px;
 `;
