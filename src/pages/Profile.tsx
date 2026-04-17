@@ -208,12 +208,13 @@ function getUpdatedUserPayload(responseData: unknown): Partial<ProfileUser> | nu
 const ProfileEditFormContainer = styled.form`
     margin: 16px;
     padding: 16px;
-    border: 1px solid #e1e8ed;
+    border: 1px solid var(--app-border);
     border-radius: 16px;
     display: flex;
     flex-direction: column;
     gap: 12px;
-    background: #ffffff;
+    background: var(--app-surface);
+    color: var(--app-text);
 `;
 
 const ProfileEditField = styled.label`
@@ -222,18 +223,25 @@ const ProfileEditField = styled.label`
     gap: 6px;
     font-size: 14px;
     font-weight: 600;
+    color: var(--app-text);
 `;
 
 const ProfileEditInput = styled.input`
-    border: 1px solid #cfd9de;
+    border: 1px solid var(--app-input-border);
     border-radius: 10px;
     padding: 10px 12px;
     font-size: 14px;
+    background: var(--app-input-bg);
+    color: var(--app-input-text);
+
+    &::placeholder {
+        color: var(--app-input-placeholder);
+    }
 
     &:focus {
-        outline: 2px solid #1d9bf0;
+        outline: 2px solid var(--app-focus-ring);
         outline-offset: 0;
-        border-color: #1d9bf0;
+        border-color: var(--app-accent);
     }
 `;
 
@@ -245,13 +253,19 @@ const ProfileEditActions = styled.div`
 
 const ProfileEditButton = styled.button<{ $variant: "primary" | "secondary" }>`
     border-radius: 999px;
-    border: 1px solid ${({ $variant }) => ($variant === "primary" ? "#1d9bf0" : "#cfd9de")};
-    background: ${({ $variant }) => ($variant === "primary" ? "#1d9bf0" : "#ffffff")};
-    color: ${({ $variant }) => ($variant === "primary" ? "#ffffff" : "#0f1419")};
+    border: 1px solid ${({ $variant }) => ($variant === "primary" ? "var(--app-accent)" : "var(--app-button-secondary-border)")};
+    background: ${({ $variant }) => ($variant === "primary" ? "var(--app-accent)" : "var(--app-button-secondary-bg)")};
+    color: ${({ $variant }) => ($variant === "primary" ? "var(--app-button-primary-text)" : "var(--app-button-secondary-text)")};
     padding: 10px 16px;
     font-size: 14px;
     font-weight: 700;
     cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+
+    &:hover:not(:disabled) {
+        background: ${({ $variant }) => ($variant === "primary" ? "var(--app-accent-hover)" : "var(--app-button-secondary-hover-bg)")};
+        border-color: ${({ $variant }) => ($variant === "primary" ? "var(--app-accent-hover)" : "var(--app-button-secondary-hover-border)")};
+    }
 
     &:disabled {
         opacity: 0.65;
@@ -263,7 +277,7 @@ const ProfileEditMessage = styled.p<{ $type: "error" | "success" }>`
     margin: 0;
     font-size: 13px;
     line-height: 1.35;
-    color: ${({ $type }) => ($type === "error" ? "#e0245e" : "#177a3f")};
+    color: ${({ $type }) => ($type === "error" ? "var(--app-danger)" : "var(--app-success)")};
 `;
 
 export const ProfilePage = () => {
@@ -740,7 +754,7 @@ export const ProfilePage = () => {
         }
 
         return likedTweets;
-    }, [activeTab, likedTweets, tweets]);
+    }, [activeTab, likedTweets, profileUser?.id, tweets]);
 
     const joinedDateValue = profileUser?.createdAt ?? tweets[tweets.length - 1]?.createdAt;
     const profileFollowingCount = followRelations.filter((relation) => relation.followerId === profileUser?.id).length;

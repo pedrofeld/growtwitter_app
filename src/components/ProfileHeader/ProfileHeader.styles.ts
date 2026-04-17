@@ -25,7 +25,7 @@ export const ProfileActionStackStyled = styled.div`
 
 export const CoverImageStyled = styled.div`
 	height: 180px;
-	background: linear-gradient(135deg, #4f8cc9, #1d9bf0);
+	background: linear-gradient(135deg, var(--app-accent), #4f8cc9);
 `;
 
 export const ProfileAvatarStyled = styled.img`
@@ -35,21 +35,22 @@ export const ProfileAvatarStyled = styled.img`
 	display: block;
 	object-fit: cover;
 	border-radius: 50%;
-	border: 4px solid #ffffff;
+	border: 4px solid var(--app-avatar-border);
 	margin-top: -60px;
 	margin-left: 16px;
-	background: #d9d9d9;
+	background: var(--app-border);
 `;
 
 export const ProfileNameStyled = styled.h1`
 	margin: 0;
 	font-size: 22px;
 	font-weight: 800;
+	color: var(--app-text);
 `;
 
 export const ProfileUsernameStyled = styled.p`
 	margin: 4px 0 0;
-	opacity: 0.8;
+	color: var(--app-text-muted);
 `;
 
 interface ProfileActionButtonStyledProps {
@@ -57,9 +58,9 @@ interface ProfileActionButtonStyledProps {
 }
 
 export const ProfileActionButtonStyled = styled.button<ProfileActionButtonStyledProps>`
-	border: 1px solid ${({ $isFollowing }) => ($isFollowing ? "#cfd9de" : "#1d9bf0")};
-	background: ${({ $isFollowing }) => ($isFollowing ? "#ffffff" : "#1d9bf0")};
-	color: ${({ $isFollowing }) => ($isFollowing ? "#0f1419" : "#ffffff")};
+	border: 1px solid ${({ $isFollowing }) => ($isFollowing ? "var(--app-button-secondary-border)" : "var(--app-accent)")};
+	background: ${({ $isFollowing }) => ($isFollowing ? "var(--app-button-secondary-bg)" : "var(--app-accent)")};
+	color: ${({ $isFollowing }) => ($isFollowing ? "var(--app-button-secondary-text)" : "var(--app-button-primary-text)")};
 	border-radius: 999px;
 	padding: 10px 18px;
 	font-size: 14px;
@@ -69,8 +70,8 @@ export const ProfileActionButtonStyled = styled.button<ProfileActionButtonStyled
 	transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
 
 	&:hover:not(:disabled) {
-		background: ${({ $isFollowing }) => ($isFollowing ? "#f7f9f9" : "#1a8cd8")};
-		border-color: ${({ $isFollowing }) => ($isFollowing ? "#bfc8cf" : "#1a8cd8")};
+		background: ${({ $isFollowing }) => ($isFollowing ? "var(--app-button-secondary-hover-bg)" : "var(--app-accent-hover)")};
+		border-color: ${({ $isFollowing }) => ($isFollowing ? "var(--app-button-secondary-hover-border)" : "var(--app-accent-hover)")};
 	}
 
 	&:disabled {
@@ -83,22 +84,24 @@ export const ProfileActionMessageStyled = styled.p`
 	margin: 0;
 	font-size: 13px;
 	line-height: 1.35;
-	color: #e0245e;
+	color: var(--app-danger);
 	max-width: 240px;
 	text-align: right;
 `;
 
 export const ProfileMetaStyled = styled.p`
 	margin: 12px 0 0;
-	opacity: 0.8;
+	color: var(--app-text-muted);
 	font-size: 14px;
 `;
 
 export const ProfileStatsStyled = styled.p`
 	margin: 12px 16px 0;
 	font-size: 14px;
+	color: var(--app-text-muted);
 
 	strong {
 		font-weight: 700;
+		color: var(--app-text);
 	}
 `;

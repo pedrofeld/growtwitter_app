@@ -12,48 +12,50 @@ export const SearchFormStyled = styled.form`
 
 export const SearchInputStyled = styled.input`
   width: 100%;
-  border: 1px solid #cfd9de;
+  border: 1px solid var(--app-input-border);
   border-radius: 999px;
   padding: 12px 16px;
   font-size: 15px;
-  background: #f7f9fa;
-  color: #0f1419;
+  background: var(--app-input-bg);
+  color: var(--app-input-text);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 
   &::placeholder {
-    color: #536471;
+    color: var(--app-input-placeholder);
   }
 
   &:focus {
     outline: none;
-    border-color: #1d9bf0;
-    box-shadow: 0 0 0 3px rgba(29, 155, 240, 0.12);
-    background: #ffffff;
+    border-color: var(--app-accent);
+    box-shadow: 0 0 0 3px var(--app-focus-ring);
+    background: var(--app-surface);
   }
 `;
 
 export const TabsRowStyled = styled.div`
   display: flex;
-  border-bottom: 1px solid #e6ecf0;
+  border-bottom: 1px solid var(--app-border);
 `;
 
 export const TabButtonStyled = styled.button<{ $isActive: boolean }>`
   flex: 1;
   border: 0;
-  border-bottom: 2px solid ${({ $isActive }) => ($isActive ? "#1d9bf0" : "transparent")};
+  border-bottom: 2px solid ${({ $isActive }) => ($isActive ? "var(--app-accent)" : "transparent")};
   background: transparent;
-  color: ${({ $isActive }) => ($isActive ? "#0f1419" : "#536471")};
+  color: ${({ $isActive }) => ($isActive ? "var(--app-selected-text)" : "var(--app-text-muted)")};
   font-size: 15px;
   font-weight: ${({ $isActive }) => ($isActive ? 700 : 600)};
   padding: 14px 12px;
   cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 
   &:hover {
-    background: #f7f9fa;
+    background: ${({ $isActive }) => ($isActive ? "var(--app-selected-surface)" : "var(--app-hover-surface)")};
   }
 `;
 
 export const StateTextStyled = styled.p`
-  color: #536471;
+  color: var(--app-text-muted);
   font-size: 14px;
 `;
 
@@ -66,7 +68,7 @@ export const UserResultsListStyled = styled.ul`
 `;
 
 export const UserResultItemStyled = styled.li`
-  border-bottom: 1px solid #e6ecf0;
+  border-bottom: 1px solid var(--app-border);
 `;
 
 export const UserResultCardStyled = styled.button`
@@ -79,13 +81,15 @@ export const UserResultCardStyled = styled.button`
   background: transparent;
   text-align: left;
   cursor: pointer;
+  color: inherit;
+  transition: background-color 0.2s ease;
 
   &:hover {
-    background: #f7f9fa;
+    background: var(--app-hover-surface);
   }
 
   &:focus-visible {
-    outline: 2px solid #1d9bf0;
+    outline: 2px solid var(--app-focus-ring);
     outline-offset: 2px;
   }
 `;
@@ -95,16 +99,16 @@ export const UserAvatarStyled = styled.img`
   height: 44px;
   border-radius: 50%;
   object-fit: cover;
-  background: #d9d9d9;
+  background: var(--app-border);
 `;
 
 export const UserNameStyled = styled.p`
-  color: #0f1419;
+  color: var(--app-text);
   font-size: 15px;
   font-weight: 700;
 `;
 
 export const UserUsernameStyled = styled.p`
-  color: #536471;
+  color: var(--app-text-muted);
   font-size: 14px;
 `;
