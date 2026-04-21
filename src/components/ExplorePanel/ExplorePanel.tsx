@@ -1,6 +1,7 @@
 import { TweetCard } from "../TweetCard/TweetCard";
 import { formatTimeAgo } from "../../utils/formatTimeAgo";
 import type { ExploreFilter, ExploreSearchState, ExploreTweetResult, ExploreUserResult } from "../../models/explore";
+import { resolveAvatarUrl } from "../../utils/avatar";
 import {
   ExploreRootStyled,
   SearchFormStyled,
@@ -94,7 +95,10 @@ export const ExplorePanel = ({
           {peopleResults.map((userResult) => (
             <UserResultItemStyled key={userResult.id}>
               <UserResultCardStyled type="button" onClick={() => onOpenProfile(userResult.username)}>
-                <UserAvatarStyled src={userResult.profileImage} alt={`Photo of ${userResult.username}`} />
+                <UserAvatarStyled
+                  src={resolveAvatarUrl(userResult.profileImage)}
+                  alt={`Photo of ${userResult.username}`}
+                />
                 <div>
                   <UserNameStyled>{userResult.name}</UserNameStyled>
                   <UserUsernameStyled>@{userResult.username}</UserUsernameStyled>

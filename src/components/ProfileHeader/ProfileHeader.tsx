@@ -12,6 +12,7 @@ import {
 	ProfileUsernameStyled,
 	ProfileTopRowStyled,
 } from "./ProfileHeader.styles";
+import { resolveAvatarUrl } from "../../utils/avatar";
 
 interface ProfileHeaderProps {
 	name: string;
@@ -47,7 +48,7 @@ export const ProfileHeader = ({
 	return (
 		<HeaderContainerStyled>
 			<CoverImageStyled />
-			<ProfileAvatarStyled src={profileImage} alt={`Foto de ${username}`} />
+			<ProfileAvatarStyled src={resolveAvatarUrl(profileImage)} alt={`Foto de ${username}`} />
 			<ProfileTopRowStyled>
 				<ProfileIdentityStyled>
 					<ProfileNameStyled>{name}</ProfileNameStyled>

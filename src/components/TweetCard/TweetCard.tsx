@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../config/context/AuthContext";
 import { emitTweetLikeChangedEvent } from "../../config/events/tweetLikeChangedEvent";
 import likeService from "../../config/services/like.service";
+import { resolveAvatarUrl } from "../../utils/avatar";
 import { TweetHeader } from "../TweetHeader/TweetHeader";
 import {
   AuthorAvatarLinkStyled,
@@ -233,6 +234,8 @@ export const TweetCard = ({
     navigate(`/tweet/${tweet.id}`);
   }
 
+  const authorAvatar = resolveAvatarUrl(tweet.author.profileImage, tweet.author.imgUrl);
+
   return (
     <TweetCardStyled
       $isClickable={enableDetailNavigation}
@@ -249,14 +252,14 @@ export const TweetCard = ({
           >
             <ProfileImageStyled
               $sizeVariant={sizeVariant}
-              src={tweet.author.profileImage}
+              src={authorAvatar}
               alt={`Photo of ${tweet.author.username}`}
             />
           </AuthorAvatarLinkStyled>
         ) : (
           <ProfileImageStyled
             $sizeVariant={sizeVariant}
-            src={tweet.author.profileImage}
+            src={authorAvatar}
             alt={`Photo of ${tweet.author.username}`}
           />
         )}
