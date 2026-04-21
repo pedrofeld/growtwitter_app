@@ -5,7 +5,11 @@ export const LoginFormContainer = styled.div`
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: #f9f9f9;
+  padding: 24px 16px;
+  background:
+    radial-gradient(circle at top left, rgba(29, 155, 240, 0.16), transparent 34%),
+    radial-gradient(circle at bottom right, rgba(20, 131, 222, 0.12), transparent 28%),
+    #f3f7fb;
 `;
 
 export const LoginFormBox = styled.div`
@@ -15,6 +19,11 @@ export const LoginFormBox = styled.div`
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   width: 100%;
   max-width: 400px;
+
+  @media (max-width: 480px) {
+    padding: 28px 20px;
+    border-radius: 20px;
+  }
 
   h1 {
     text-align: center;
