@@ -5,6 +5,7 @@ import {
 	TabListStyled,
 	TweetsContainerStyled,
 } from "./ProfileInformations.styles";
+import { formatTimeAgo } from "../../utils/formatTimeAgo";
 
 export type ProfileTab = "tweets" | "replies" | "likes";
 
@@ -17,17 +18,6 @@ interface ProfileInformationsProps {
 	activeTab: ProfileTab;
 	onTabChange: (tab: ProfileTab) => void;
 	tweets: ProfileTweet[];
-}
-
-function formatTimeAgo(dateString: string): string {
-	const date = new Date(dateString);
-	const seconds = (Date.now() - date.getTime()) / 1000;
-
-	if (seconds < 60) return "now";
-	if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
-	if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
-
-	return `${Math.floor(seconds / 86400)}d`;
 }
 
 export const ProfileInformations = ({ activeTab, onTabChange, tweets }: ProfileInformationsProps) => {

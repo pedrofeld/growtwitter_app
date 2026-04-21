@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { TweetCard } from "../components/TweetCard/TweetCard";
 import exploreService from "../config/services/explore.service";
 import type { ExploreFilter, ExploreSearchState, ExploreTweetResult, ExploreUserResult } from "../models/explore";
+import { formatTimeAgo } from "../utils/formatTimeAgo";
 import {
     ExploreRootStyled,
     SearchFormStyled,
@@ -17,17 +18,6 @@ import {
     UserResultsListStyled,
     UserUsernameStyled,
 } from "./Explore.styles";
-
-function formatTimeAgo(dateString: string): string {
-    const date = new Date(dateString);
-    const seconds = (Date.now() - date.getTime()) / 1000;
-
-    if (seconds < 60) return "now";
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
-
-    return `${Math.floor(seconds / 86400)}d`;
-}
 
 const SEARCH_DEBOUNCE_MS = 350;
 

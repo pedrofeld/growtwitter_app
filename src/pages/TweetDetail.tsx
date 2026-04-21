@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { TweetCard, type FeedTweetCardData } from "../components/TweetCard/TweetCard";
 import { useAuth } from "../config/context/AuthContext";
 import tweetService, { type ThreadTweet } from "../config/services/tweet.service";
+import { formatTimeAgo } from "../utils/formatTimeAgo";
 import {
   ComposerAvatarStyled,
   ComposerErrorStyled,
@@ -27,17 +28,6 @@ interface TweetThreadPayload {
 
 interface DetailTweet extends FeedTweetCardData {
   createdAt: string;
-}
-
-function formatTimeAgo(dateString: string): string {
-  const date = new Date(dateString);
-  const seconds = (Date.now() - date.getTime()) / 1000;
-
-  if (seconds < 60) return "now";
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
-
-  return `${Math.floor(seconds / 86400)}d`;
 }
 
 function toDetailTweet(tweet: ThreadTweet): DetailTweet {

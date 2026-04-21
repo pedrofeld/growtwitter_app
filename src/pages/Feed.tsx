@@ -7,6 +7,7 @@ import {
   TWEET_CREATED_EVENT,
 } from "../config/events/tweetCreatedEvent";
 import { TweetCard, type FeedTweetCardData } from "../components/TweetCard/TweetCard";
+import { formatTimeAgo } from "../utils/formatTimeAgo";
 
 interface FeedUser {
   id: string;
@@ -36,18 +37,6 @@ interface FeedTweet extends FeedTweetCardData {
 
 interface TweetsPayload {
   data: FeedTweetApi[];
-}
-
-// Converts ISO date string to relative time ("5m", "2h", "3d")
-function formatTimeAgo(dateString: string): string {
-  const date = new Date(dateString);
-  const seconds = (Date.now() - date.getTime()) / 1000;
-
-  if (seconds < 60) return "now";
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
-
-  return `${Math.floor(seconds / 86400)}d`;
 }
 
 export const FeedPage = () => {
