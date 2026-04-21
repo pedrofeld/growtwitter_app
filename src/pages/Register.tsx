@@ -3,19 +3,7 @@ import type { FormEvent } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import userService from "../config/services/user.service";
 import { useAuth } from "../config/context/AuthContext";
-import {
-  RegisterFormBox,
-  RegisterFormButton,
-  RegisterFormContainer,
-  RegisterFormError,
-  RegisterFormField,
-  RegisterFormInput,
-  RegisterFormLinkButton,
-  RegisterFormMessage,
-  RegisterFormStack,
-  RegisterFormText,
-  RegisterFormTitle,
-} from "./Register.styles";
+import { RegisterForm, type RegisterFormFieldKey } from "../components/RegisterForm/RegisterForm";
 
 function isValidHttpUrl(value: string): boolean {
   try {
@@ -135,102 +123,30 @@ export const RegisterPage = () => {
   };
 
   return (
-    <RegisterFormContainer>
-      <RegisterFormBox>
-        <RegisterFormTitle>Create account</RegisterFormTitle>
-        <RegisterFormText>Join GrowTwitter and start posting, replying, and following.</RegisterFormText>
+    <RegisterForm
+      name={name}
+      username={username}
+      email={email}
+      password={password}
+      confirmPassword={confirmPassword}
+      profileImage={profileImage}
+      loading={loading}
+      error={error}
+      success={success}
+      onFieldChange={(field, value) => {
+        const setters: Record<RegisterFormFieldKey, (nextValue: string) => void> = {
+          name: setName,
+          username: setUsername,
+          email: setEmail,
+          password: setPassword,
+          confirmPassword: setConfirmPassword,
+          profileImage: setProfileImage,
+        };
 
-        {error ? <RegisterFormError>{error}</RegisterFormError> : null}
-        {success ? <RegisterFormMessage>{success}</RegisterFormMessage> : null}
-
-        <RegisterFormStack onSubmit={handleSubmit}>
-          <RegisterFormField>
-            <label htmlFor="name">Name</label>
-            <RegisterFormInput
-              id="name"
-              type="text"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="Your full name"
-              required
-              disabled={loading}
-            />
-          </RegisterFormField>
-
-          <RegisterFormField>
-            <label htmlFor="username">Username</label>
-            <RegisterFormInput
-              id="username"
-              type="text"
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-              placeholder="yourusername"
-              required
-              disabled={loading}
-            />
-          </RegisterFormField>
-
-          <RegisterFormField>
-            <label htmlFor="email">Email</label>
-            <RegisterFormInput
-              id="email"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="your@email.com"
-              required
-              disabled={loading}
-            />
-          </RegisterFormField>
-
-          <RegisterFormField>
-            <label htmlFor="password">Password</label>
-            <RegisterFormInput
-              id="password"
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="At least 6 characters"
-              required
-              minLength={6}
-              disabled={loading}
-            />
-          </RegisterFormField>
-
-          <RegisterFormField>
-            <label htmlFor="confirmPassword">Confirm password</label>
-            <RegisterFormInput
-              id="confirmPassword"
-              type="password"
-              value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
-              placeholder="Repeat your password"
-              required
-              disabled={loading}
-            />
-          </RegisterFormField>
-
-          <RegisterFormField>
-            <label htmlFor="profileImage">Profile image URL</label>
-            <RegisterFormInput
-              id="profileImage"
-              type="url"
-              value={profileImage}
-              onChange={(event) => setProfileImage(event.target.value)}
-              placeholder="https://example.com/avatar.jpg"
-              disabled={loading}
-            />
-          </RegisterFormField>
-
-          <RegisterFormButton type="submit" disabled={loading}>
-            {loading ? "Creating account..." : "Create account"}
-          </RegisterFormButton>
-
-          <RegisterFormLinkButton type="button" onClick={() => navigate("/login")} disabled={loading}>
-            Back to login
-          </RegisterFormLinkButton>
-        </RegisterFormStack>
-      </RegisterFormBox>
-    </RegisterFormContainer>
+        setters[field](value);
+      }}
+      onSubmit={handleSubmit}
+      onBackToLogin={() => navigate("/login")}
+    />
   );
 };

@@ -1,36 +1,15 @@
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { TweetCard, type FeedTweetCardData } from "../components/TweetCard/TweetCard";
 import { useAuth } from "../config/context/AuthContext";
 import tweetService, { type ThreadTweet } from "../config/services/tweet.service";
-import { formatTimeAgo } from "../utils/formatTimeAgo";
-import {
-  ComposerAvatarStyled,
-  ComposerErrorStyled,
-  ComposerHintStyled,
-  ComposerInputAreaStyled,
-  ComposerSubmitButtonStyled,
-  ComposerTextareaStyled,
-  DetailStateTextStyled,
-  FocusedTweetSectionStyled,
-  InlineReplyComposerStyled,
-  RepliesSectionStyled,
-  RepliesTitleStyled,
-  ReplyItemStyled,
-  RetryButtonStyled,
-  TweetDetailPageStyled,
-} from "./TweetDetail.styles";
+import { TweetDetailThread, type TweetDetailThreadTweet } from "../components/TweetDetailThread/TweetDetailThread";
 
 interface TweetThreadPayload {
   tweet?: ThreadTweet;
   replies?: ThreadTweet[];
 }
 
-interface DetailTweet extends FeedTweetCardData {
-  createdAt: string;
-}
-
-function toDetailTweet(tweet: ThreadTweet): DetailTweet {
+function toDetailTweet(tweet: ThreadTweet): TweetDetailThreadTweet {
   return {
     id: tweet.id,
     author: tweet.author,
@@ -47,8 +26,8 @@ export const TweetDetailPage = () => {
   const { tweetId } = useParams();
   const { user } = useAuth();
 
-  const [focusedTweet, setFocusedTweet] = useState<DetailTweet | null>(null);
-  const [replies, setReplies] = useState<DetailTweet[]>([]);
+  const [focusedTweet, setFocusedTweet] = useState<TweetDetailThreadTweet | null>(null);
+  const [replies, setReplies] = useState<TweetDetailThreadTweet[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState("");
@@ -127,70 +106,22 @@ export const TweetDetailPage = () => {
     void Promise.resolve().then(loadTweetThread);
   }, [loadTweetThread]);
 
-  if (loading) return <DetailStateTextStyled>Loading tweet details...</DetailStateTextStyled>;
-
-  if (error) {
-    return (
-      <div>
-        <DetailStateTextStyled>{error}</DetailStateTextStyled>
-        <RetryButtonStyled type="button" onClick={() => void loadTweetThread()}>
-          Try again
-        </RetryButtonStyled>
-      </div>
-    );
-  }
-
-  if (!focusedTweet) return <DetailStateTextStyled>Tweet not found.</DetailStateTextStyled>;
-
   const currentUserAvatar = user?.imgUrl || "https://placehold.co/80x80";
 
   return (
-    <TweetDetailPageStyled>
-      <FocusedTweetSectionStyled>
-        <TweetCard
-          tweet={focusedTweet}
-          timeLabel={formatTimeAgo(focusedTweet.createdAt)}
-          enableDetailNavigation={false}
-          sizeVariant="expanded"
-        />
-      </FocusedTweetSectionStyled>
-
-      <InlineReplyComposerStyled onSubmit={handleReplySubmit}>
-        <ComposerAvatarStyled src={currentUserAvatar} alt="Your profile" />
-
-        <ComposerInputAreaStyled>
-          <ComposerTextareaStyled
-            placeholder="Tweet your reply"
-            value={replyContent}
-            onChange={(changeEvent) => setReplyContent(changeEvent.target.value)}
-            disabled={!user?.id || isSubmittingReply}
-            maxLength={300}
-          />
-          <ComposerHintStyled>{replyContent.length}/300</ComposerHintStyled>
-          {replyError ? <ComposerErrorStyled>{replyError}</ComposerErrorStyled> : null}
-        </ComposerInputAreaStyled>
-
-        <ComposerSubmitButtonStyled
-          type="submit"
-          disabled={!user?.id || !replyContent.trim() || isSubmittingReply}
-        >
-          {isSubmittingReply ? "Replying..." : "Reply"}
-        </ComposerSubmitButtonStyled>
-      </InlineReplyComposerStyled>
-
-      <RepliesSectionStyled>
-        <RepliesTitleStyled>Replies</RepliesTitleStyled>
-
-        {replies.length === 0 ? (
-          <DetailStateTextStyled>No replies yet.</DetailStateTextStyled>
-        ) : (
-          replies.map((reply) => (
-            <ReplyItemStyled key={reply.id}>
-              <TweetCard tweet={reply} timeLabel={formatTimeAgo(reply.createdAt)} />
-            </ReplyItemStyled>
-          ))
-        )}
-      </RepliesSectionStyled>
-    </TweetDetailPageStyled>
+    <TweetDetailThread
+      tweet={focusedTweet}
+      replies={replies}
+      loading={loading}
+      error={error}
+      replyContent={replyContent}
+      replyError={replyError}
+      isSubmittingReply={isSubmittingReply}
+      canReply={Boolean(user?.id)}
+      currentUserAvatar={currentUserAvatar}
+      onReplyContentChange={setReplyContent}
+      onReplySubmit={handleReplySubmit}
+      onRetry={() => void loadTweetThread()}
+    />
   );
 };
