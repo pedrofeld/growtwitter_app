@@ -167,6 +167,43 @@ function normalizeProfileImageValue(value: unknown): string {
     return typeof value === "string" ? value.trim() : "";
 }
 
+function resolveProfileAvatar(user: Partial<ProfileUser> | null | undefined): string {
+    if (!user) return "";
+
+    return normalizeProfileImageValue(user.profileImage) || normalizeProfileImageValue(user.imgUrl);
+}
+
+function syncAuthorAvatarForUser(tweets: ProfileTweet[], userId: string, avatarUrl: string): ProfileTweet[] {
+    if (!avatarUrl) {
+        return tweets;
+    }
+
+    let hasChanges = false;
+
+    const nextTweets = tweets.map((tweet) => {
+        if (tweet.author.id !== userId) {
+            return tweet;
+        }
+
+        if (tweet.author.profileImage === avatarUrl && tweet.author.imgUrl === avatarUrl) {
+            return tweet;
+        }
+
+        hasChanges = true;
+
+        return {
+            ...tweet,
+            author: {
+                ...tweet.author,
+                profileImage: avatarUrl,
+                imgUrl: avatarUrl,
+            },
+        };
+    });
+
+    return hasChanges ? nextTweets : tweets;
+}
+
 function getFriendlyProfileUpdateError(rawMessage: string | undefined): string {
     const normalizedMessage = rawMessage?.toLowerCase() ?? "";
 
@@ -317,6 +354,7 @@ export const ProfilePage = () => {
         async function loadProfileTweets() {
             const profileIdentifier = username?.trim();
             let targetProfileId = authenticatedUser?.id;
+            let resolvedProfileAvatar = resolveProfileAvatar(authenticatedUser);
 
             if (!targetProfileId && !profileIdentifier) {
                 setProfileUser(null);
@@ -376,6 +414,7 @@ export const ProfilePage = () => {
                     }
 
                     targetProfileId = matchedUser.id;
+                    resolvedProfileAvatar = resolveProfileAvatar(matchedUser);
 
                     setProfileUser(matchedUser);
                     setFollowersCount(
@@ -385,7 +424,15 @@ export const ProfilePage = () => {
                         Boolean(currentUserId && allFollowRelations.some((relation) => relation.followerId === currentUserId && relation.followingId === matchedUser.id)),
                     );
                 } else {
-                    setProfileUser(authenticatedUser);
+                    const usersResponse = await userService.listUsers();
+                    const allUsers = usersResponse.ok
+                        ? (Array.isArray(usersResponse.data) ? usersResponse.data : usersResponse.data?.data ?? [])
+                        : [];
+                    const usersList = allUsers as ProfileUser[];
+                    const matchedAuthenticatedUser = usersList.find((candidate) => candidate.id === authenticatedUser?.id) ?? authenticatedUser;
+                    resolvedProfileAvatar = resolveProfileAvatar(matchedAuthenticatedUser);
+
+                    setProfileUser(matchedAuthenticatedUser ?? null);
                     setFollowersCount(
                         allFollowRelations.filter((relation) => relation.followingId === authenticatedUser?.id).length,
                     );
@@ -441,10 +488,48 @@ export const ProfilePage = () => {
                     })
                     .filter((tweet): tweet is ProfileTweet => tweet !== null);
 
-                const userTweets = dedupeTweetsById(
-                    normalizedTweets.filter((tweet) => tweet.author.id === resolvedProfileId),
+                const fallbackAvatarFromTweets = normalizedTweets.find((tweet) => {
+                    if (tweet.author.id !== resolvedProfileId) {
+                        return false;
+                    }
+
+                    return Boolean(normalizeProfileImageValue(tweet.author.profileImage) || normalizeProfileImageValue(tweet.author.imgUrl));
+                });
+
+                const effectiveProfileAvatar = resolvedProfileAvatar
+                    || normalizeProfileImageValue(fallbackAvatarFromTweets?.author.profileImage)
+                    || normalizeProfileImageValue(fallbackAvatarFromTweets?.author.imgUrl);
+
+                if (effectiveProfileAvatar) {
+                    setProfileUser((currentProfileUser) => {
+                        if (!currentProfileUser || currentProfileUser.id !== resolvedProfileId) {
+                            return currentProfileUser;
+                        }
+
+                        const currentAvatar = resolveProfileAvatar(currentProfileUser);
+
+                        if (currentAvatar) {
+                            return currentProfileUser;
+                        }
+
+                        return {
+                            ...currentProfileUser,
+                            profileImage: effectiveProfileAvatar,
+                            imgUrl: effectiveProfileAvatar,
+                        };
+                    });
+                }
+
+                const syncedNormalizedTweets = syncAuthorAvatarForUser(
+                    normalizedTweets,
+                    resolvedProfileId,
+                    effectiveProfileAvatar,
                 );
-                const userLikedTweets = normalizedTweets.filter((tweet) => hasUserLike(tweet.likes, resolvedProfileId));
+
+                const userTweets = dedupeTweetsById(
+                    syncedNormalizedTweets.filter((tweet) => tweet.author.id === resolvedProfileId),
+                );
+                const userLikedTweets = syncedNormalizedTweets.filter((tweet) => hasUserLike(tweet.likes, resolvedProfileId));
 
                 userTweets.sort(
                     (firstTweet, secondTweet) =>
@@ -716,6 +801,8 @@ export const ProfilePage = () => {
             };
 
             setProfileUser(nextProfileUser);
+            setTweets((currentTweets) => syncAuthorAvatarForUser(currentTweets, profileUser.id, nextProfileImage));
+            setLikedTweets((currentTweets) => syncAuthorAvatarForUser(currentTweets, profileUser.id, nextProfileImage));
             setProfileEditSuccess("Profile updated successfully.");
             setIsEditingProfile(false);
 
