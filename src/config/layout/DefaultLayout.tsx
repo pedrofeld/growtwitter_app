@@ -8,8 +8,25 @@ import { TrendItem } from "../../components/TrendItem/TrendItem";
 import { NewTweet } from "../../components/NewTweet/NewTweet";
 import { LayoutRoot, LayoutContainer } from "./DefaultLayout.styles";
 
+const THEME_STORAGE_KEY = "growtwitter:theme-mode";
+
+const getInitialThemeMode = (): "light" | "dark" => {
+  try {
+    const savedThemeMode = localStorage.getItem(THEME_STORAGE_KEY);
+    if (savedThemeMode === "light" || savedThemeMode === "dark") {
+      return savedThemeMode;
+    }
+  } catch {
+    return "light";
+  }
+
+  return "light";
+};
+
 export const DefaultLayout = () => {
-  const [themeMode, setThemeMode] = useState<"light" | "dark">("light");
+  const [themeMode, setThemeMode] = useState<"light" | "dark">(
+    getInitialThemeMode,
+  );
   const [isNewTweetModalOpen, setIsNewTweetModalOpen] = useState(false);
   const { logout } = useAuth();
   const location = useLocation();
@@ -23,9 +40,17 @@ export const DefaultLayout = () => {
   }, [location.pathname]);
 
   const toggleTheme = () => {
-    setThemeMode((currentTheme) =>
-      currentTheme === "light" ? "dark" : "light",
-    );
+    setThemeMode((currentTheme) => {
+      const nextThemeMode = currentTheme === "light" ? "dark" : "light";
+
+      try {
+        localStorage.setItem(THEME_STORAGE_KEY, nextThemeMode);
+      } catch {
+        return nextThemeMode;
+      }
+
+      return nextThemeMode;
+    });
   };
 
   const openNewTweetModal = () => {
