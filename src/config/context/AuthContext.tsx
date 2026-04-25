@@ -1,44 +1,18 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import type { User } from "../../models/user";
 import { api } from "../services/api.service";
-
-function normalizeTokenValue(rawToken: unknown): string | null {
-  if (!rawToken) return null;
-
-  if (typeof rawToken === "object") {
-    const tokenFromObject = (rawToken as { token?: string; accessToken?: string }).token
-      || (rawToken as { token?: string; accessToken?: string }).accessToken;
-    return normalizeTokenValue(tokenFromObject);
-  }
-
-  if (typeof rawToken !== "string") return null;
-
-  const trimmedValue = rawToken.trim().replace(/^"|"$/g, "");
-  const normalizedToken = trimmedValue.replace(/^Bearer\s+/i, "").trim();
-
-  return normalizedToken || null;
-}
-
-function isJwtExpired(token: string): boolean {
-  try {
-    const payloadPart = token.split(".")[1];
-    if (!payloadPart) return false;
-
-    const base64 = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
-    const payload = JSON.parse(atob(base64)) as { exp?: number };
-
-    if (!payload.exp) return false;
-
-    return Date.now() >= payload.exp * 1000;
-  } catch {
-    return false;
-  }
-}
+import {
+  clearAuthSession,
+  persistAuthSession,
+  normalizeTokenValue,
+  readAuthSession,
+  type StoredAuthSession,
+} from "../services/authSession.service";
 
 interface AuthContextType {
-  user: User | null; // Loged user data (or null if not loged)
+  user: User | null;
   isAuthenticated: boolean;
   login: (login: string, password: string) => Promise<void>;
   logout: () => void;
@@ -48,42 +22,37 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  
-  // Initialize user state from localStorage (if there's a saved user)
-  const [user, setUser] = useState<User | null>(() => {
-    const savedUser = localStorage.getItem("authUser");
-    const storedToken = normalizeTokenValue(localStorage.getItem("authToken"));
+  const [session, setSession] = useState<StoredAuthSession | null>(() => readAuthSession({
+    clearInvalid: true,
+  }));
 
-    if (!storedToken || isJwtExpired(storedToken)) {
-      localStorage.removeItem("authToken");
-      localStorage.removeItem("authUser");
-      return null;
+  useEffect(() => {
+    if (!session) {
+      clearAuthSession();
+      return;
     }
 
-    if (!savedUser) {
-      localStorage.removeItem("authToken");
-      return null;
+    const timeoutInMs = session.expiresAt - Date.now();
+
+    if (timeoutInMs <= 0) {
+      clearAuthSession();
+      setSession(null);
+      return;
     }
 
-    try {
-      return JSON.parse(savedUser) as User;
-    } catch {
-      localStorage.removeItem("authUser");
-      localStorage.removeItem("authToken");
-      return null;
-    }
-  });
+    const timeoutId = window.setTimeout(() => {
+      clearAuthSession();
+      setSession(null);
+    }, timeoutInMs);
 
-  /**
-   * Login function:
-   * 1. Makes POST request to /login with email and password
-   * 2. Backend returns { token: "jwt...", user: { id, username, ... } }
-   * 3. Saves user in state (allows rest of app to know we're logged in)
-   * 4. Saves token in localStorage (persists session across reloads)
-   * 5. Interceptor automatically adds this token to future requests
-   */
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [session]);
+
+  const user = session?.user ?? null;
+
   const login = async (login: string, password: string) => {
-    // Backend layer
     try {
       const response = await api.post("/login", {
         login,
@@ -107,47 +76,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error("Invalid login response: missing user data");
       }
 
-      // Save user data in state (isAuthenticated becomes true)
-      setUser(userData);
-      localStorage.setItem("authUser", JSON.stringify(userData));
-
-      // Save token in localStorage for future requests
-      localStorage.setItem("authToken", token);
+      setSession(persistAuthSession(userData, token));
     } catch (error) {
       console.error("Error during login:", error);
       throw error;
     }
   };
 
-  /**
-   * Logout function
-   * 1. Removes user from state (isAuthenticated becomes false)
-   * 2. Remove token from localStorage
-   * 3. ProtectedRoute will automatically redirect to /login
-   */
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("authUser");
-  };
+  const logout = useCallback(() => {
+    clearAuthSession();
+    setSession(null);
+  }, []);
 
-  const updateUser = (updater: (currentUser: User | null) => User | null) => {
-    setUser((currentUser) => {
-      const updatedUser = updater(currentUser);
-
-      if (updatedUser) {
-        localStorage.setItem("authUser", JSON.stringify(updatedUser));
-      } else {
-        localStorage.removeItem("authUser");
+  const updateUser = useCallback((updater: (currentUser: User | null) => User | null) => {
+    setSession((currentSession) => {
+      if (!currentSession) {
+        return null;
       }
 
-      return updatedUser;
-    });
-  };
+      const updatedUser = updater(currentSession.user);
 
-  const token = localStorage.getItem("authToken");
-  const normalizedToken = normalizeTokenValue(token);
-  const isAuthenticated = !!user && !!normalizedToken && !isJwtExpired(normalizedToken);
+      if (!updatedUser) {
+        clearAuthSession();
+        return null;
+      }
+
+      return persistAuthSession(updatedUser, currentSession.token, currentSession.expiresAt);
+    });
+  }, []);
+
+  const isAuthenticated = !!session && session.expiresAt > Date.now();
 
   return (
     <AuthContext.Provider

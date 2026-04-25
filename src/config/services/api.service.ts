@@ -1,21 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from 'axios';
 import type { ResponseDto } from "../dtos/response.dto";
-
-function normalizeToken(rawToken: string | null): string | null {
-    if (!rawToken) return null;
-    const trimmedValue = rawToken.trim().replace(/^"|"$/g, "");
-    const normalizedToken = trimmedValue.replace(/^Bearer\s+/i, "").trim();
-
-    return normalizedToken || null;
-}
+import { clearAuthSession, hasPersistedAuthSession, readAuthToken } from "./authSession.service";
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
 });
 
 api.interceptors.request.use((config) => {
-    const token = normalizeToken(localStorage.getItem("authToken"));
+        const token = readAuthToken({ clearInvalid: true });
 
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
@@ -23,6 +16,23 @@ api.interceptors.request.use((config) => {
 
     return config;
 });
+
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        const status = error.response?.status;
+
+        if ((status === 401 || status === 403) && hasPersistedAuthSession()) {
+            clearAuthSession();
+
+            if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+                window.location.replace("/login");
+            }
+        }
+
+        return Promise.reject(error);
+    },
+);
 
 class ApiService {
     public handleError(error: any): ResponseDto {
