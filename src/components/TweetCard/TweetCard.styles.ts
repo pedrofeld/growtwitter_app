@@ -1,5 +1,6 @@
 import styled from "styled-components";
 import { Link } from "react-router-dom";
+import { media } from "../../config/styles/breakpoints";
 
 interface TweetCardStyledProps {
   $isClickable: boolean;
@@ -14,6 +15,11 @@ export const TweetCardStyled = styled.article<TweetCardStyledProps>`
 
   &:not(:last-child) {
     margin-bottom: 12px;
+  }
+
+  ${media.mobile} {
+    padding: 12px;
+    border-radius: 12px;
   }
 `;
 
@@ -59,13 +65,20 @@ interface TweetContentStyledProps {
 export const TweetContentStyled = styled.p<TweetContentStyledProps>`
   margin: 8px 0 12px;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   line-height: ${({ $sizeVariant }) => ($sizeVariant === "expanded" ? "1.55" : "1.4")};
   font-size: ${({ $sizeVariant }) => ($sizeVariant === "expanded" ? "22px" : "15px")};
+
+  ${media.mobile} {
+    font-size: 14px;
+    line-height: 1.45;
+  }
 `;
 
 export const MetaRowStyled = styled.footer`
   display: flex;
   gap: 16px;
+  flex-wrap: wrap;
 `;
 
 export const MetricStyled = styled.span`
@@ -87,7 +100,13 @@ export const LikeButtonStyled = styled.button`
   cursor: pointer;
   border: none;
   background: transparent;
-  padding: 0;
+  min-height: 36px;
+  padding: 6px 8px;
+  border-radius: 999px;
+
+  &:hover {
+    background: rgba(29, 155, 240, 0.08);
+  }
 `;
 
 export const ReplyTagStyled = styled.small`

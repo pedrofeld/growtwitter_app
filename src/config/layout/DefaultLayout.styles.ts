@@ -1,4 +1,5 @@
 import styled, { css } from "styled-components";
+import { breakpoints, media } from "../styles/breakpoints";
 import { themeTokens } from "../styles/themeTokens";
 
 interface ThemeModeProps {
@@ -18,6 +19,8 @@ const palette = {
 
 export const LayoutRoot = styled.div<ThemeModeProps>`
   min-height: 100vh;
+  width: 100%;
+  overflow-x: clip;
   background: ${({ $themeMode }) => palette[$themeMode].bg};
   color: ${({ $themeMode }) => palette[$themeMode].text};
 
@@ -51,19 +54,22 @@ export const LayoutRoot = styled.div<ThemeModeProps>`
 `;
 
 export const LayoutContainer = styled.div<ThemeModeProps>`
-  max-width: 1260px;
+  max-width: ${breakpoints.desktop}px;
+  width: 100%;
   margin: 0 auto;
   padding: 0 16px;
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr) 320px;
   gap: 24px;
 
-  @media (max-width: 1100px) {
+  ${media.tablet} {
     grid-template-columns: 88px minmax(0, 1fr);
+    gap: 16px;
   }
 
-  @media (max-width: 760px) {
+  ${media.mobile} {
     grid-template-columns: minmax(0, 1fr);
     padding: 0;
+    gap: 0;
   }
 `;

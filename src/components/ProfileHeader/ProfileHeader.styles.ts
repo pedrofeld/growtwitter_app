@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { media } from "../../config/styles/breakpoints";
 
 export const HeaderContainerStyled = styled.section`
 	width: 100%;
@@ -10,6 +11,11 @@ export const ProfileTopRowStyled = styled.div`
 	justify-content: space-between;
 	gap: 16px;
 	margin: 12px 16px 0;
+
+	${media.mobile} {
+		margin: 12px 12px 0;
+		gap: 10px;
+	}
 `;
 
 export const ProfileIdentityStyled = styled.div`
@@ -26,6 +32,10 @@ export const ProfileActionStackStyled = styled.div`
 export const CoverImageStyled = styled.div`
 	height: 180px;
 	background: linear-gradient(135deg, var(--app-accent), #4f8cc9);
+
+	${media.mobile} {
+		height: 140px;
+	}
 `;
 
 export const ProfileAvatarStyled = styled.img`
@@ -39,6 +49,14 @@ export const ProfileAvatarStyled = styled.img`
 	margin-top: -60px;
 	margin-left: 16px;
 	background: var(--app-border);
+
+	${media.mobile} {
+		width: 88px;
+		height: 88px;
+		margin-top: -44px;
+		margin-left: 12px;
+		border-width: 3px;
+	}
 `;
 
 export const ProfileNameStyled = styled.h1`
@@ -46,6 +64,10 @@ export const ProfileNameStyled = styled.h1`
 	font-size: 22px;
 	font-weight: 800;
 	color: var(--app-text);
+
+	${media.mobile} {
+		font-size: 20px;
+	}
 `;
 
 export const ProfileUsernameStyled = styled.p`
@@ -63,6 +85,7 @@ export const ProfileActionButtonStyled = styled.button<ProfileActionButtonStyled
 	color: ${({ $isFollowing }) => ($isFollowing ? "var(--app-button-secondary-text)" : "var(--app-button-primary-text)")};
 	border-radius: 999px;
 	padding: 10px 18px;
+	min-height: 42px;
 	font-size: 14px;
 	font-weight: 700;
 	line-height: 1;
@@ -93,12 +116,19 @@ export const ProfileMetaStyled = styled.p`
 	margin: 12px 16px 0;
 	color: var(--app-text-muted);
 	font-size: 14px;
+	${media.mobile} {
+		margin: 10px 12px 0;
+	}
 `;
 
 export const ProfileStatsStyled = styled.p`
 	margin: 12px 16px 0;
 	font-size: 14px;
 	color: var(--app-text-muted);
+
+	${media.mobile} {
+		margin: 10px 12px 0;
+	}
 
 	strong {
 		font-weight: 700;

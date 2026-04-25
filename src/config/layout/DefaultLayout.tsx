@@ -6,6 +6,7 @@ import { MainContent } from "../../components/MainContent/MainContent";
 import { RightSidebar, TrendCard } from "../../components/RightSidebar/RightSidebar";
 import { TrendItem } from "../../components/TrendItem/TrendItem";
 import { NewTweet } from "../../components/NewTweet/NewTweet";
+import { MobileBottomNav } from "../../components/MobileBottomNav/MobileBottomNav";
 import { LayoutRoot, LayoutContainer } from "./DefaultLayout.styles";
 
 const THEME_STORAGE_KEY = "growtwitter:theme-mode";
@@ -61,6 +62,11 @@ export const DefaultLayout = () => {
     setIsNewTweetModalOpen(false);
   };
 
+  const shouldShowMobileNav =
+    location.pathname === "/"
+    || location.pathname.startsWith("/explore")
+    || location.pathname.startsWith("/profile");
+
   return (
     <LayoutRoot $themeMode={themeMode}>
       <LayoutContainer $themeMode={themeMode}>
@@ -101,6 +107,8 @@ export const DefaultLayout = () => {
         onClose={closeNewTweetModal}
         themeMode={themeMode}
       />
+
+      {shouldShowMobileNav ? <MobileBottomNav themeMode={themeMode} /> : null}
     </LayoutRoot>
   );
 };

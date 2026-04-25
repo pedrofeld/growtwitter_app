@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { media } from "../../config/styles/breakpoints";
 
 interface ThemeModeProps {
   $themeMode: "light" | "dark";
@@ -27,7 +28,7 @@ export const SidebarStyled = styled.aside<ThemeModeProps>`
   gap: 16px;
   color: ${({ $themeMode }) => palette[$themeMode].text};
 
-  @media (max-width: 1100px) {
+  ${media.tablet} {
     display: none;
   }
 `;

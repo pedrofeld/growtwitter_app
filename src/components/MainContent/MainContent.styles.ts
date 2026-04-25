@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { media } from "../../config/styles/breakpoints";
 
 interface ThemeModeProps {
   $themeMode: "light" | "dark";
@@ -19,11 +20,13 @@ const palette = {
 
 export const MainContentStyled = styled.main<ThemeModeProps>`
   min-height: 100vh;
+  min-width: 0;
+  width: 100%;
   border-left: 1px solid ${({ $themeMode }) => palette[$themeMode].border};
   border-right: 1px solid ${({ $themeMode }) => palette[$themeMode].border};
   background: ${({ $themeMode }) => palette[$themeMode].panel};
 
-  @media (max-width: 760px) {
+  ${media.mobile} {
     border: none;
     border-top: 1px solid ${({ $themeMode }) => palette[$themeMode].border};
   }
@@ -39,6 +42,11 @@ export const ContentHeaderStyled = styled.header<ThemeModeProps>`
   font-size: 20px;
   font-weight: 800;
   color: ${({ $themeMode }) => palette[$themeMode].text};
+
+  ${media.mobile} {
+    padding: 14px 16px;
+    font-size: 18px;
+  }
 `;
 
 export const ContentHeaderRowStyled = styled.div`
@@ -52,6 +60,8 @@ export const BackButtonStyled = styled.button`
   background: transparent;
   color: inherit;
   cursor: pointer;
+  min-width: 36px;
+  min-height: 36px;
   padding: 0;
   display: inline-flex;
   align-items: center;
@@ -64,4 +74,8 @@ export const BackButtonStyled = styled.button`
 
 export const ContentBodyStyled = styled.section`
   padding: 16px;
+
+  ${media.mobile} {
+    padding: 12px 12px calc(82px + env(safe-area-inset-bottom));
+  }
 `;

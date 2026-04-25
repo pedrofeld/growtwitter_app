@@ -1,4 +1,5 @@
 import styled, { css } from "styled-components";
+import { media } from "../../config/styles/breakpoints";
 
 interface ThemeModeProps {
   $themeMode: "light" | "dark";
@@ -22,6 +23,7 @@ export const TweetButtonStyled = styled.button<ThemeModeProps>`
   background: ${({ $themeMode }) => palette[$themeMode].accent};
   color: #ffffff;
   padding: 12px 16px;
+  min-height: 48px;
   border-radius: 999px;
   font-size: 15px;
   font-weight: 700;
@@ -40,8 +42,8 @@ const IconActionButtonStyles = css<ThemeModeProps>`
   background: ${({ $themeMode }) =>
     $themeMode === "light" ? "#fff" : "#16181c"};
   color: ${({ $themeMode }) => palette[$themeMode].text};
-  width: 48px;
-  height: 48px;
+  width: 50px;
+  height: 50px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -83,7 +85,7 @@ export const SidebarStyled = styled.aside<ThemeModeProps>`
   gap: 16px;
   color: ${({ $themeMode }) => palette[$themeMode].text};
 
-  @media (max-width: 760px) {
+  ${media.mobile} {
     display: none;
   }
 `;
@@ -97,5 +99,13 @@ export const BrandStyled = styled.h1`
   img {
     width: 50%;
     height: auto;
+  }
+
+  ${media.tablet} {
+    justify-content: center;
+
+    img {
+      width: 68%;
+    }
   }
 `;

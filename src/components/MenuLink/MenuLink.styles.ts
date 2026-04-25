@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { media } from "../../config/styles/breakpoints";
 
 interface ThemeModeProps {
   $themeMode: "light" | "dark";
@@ -25,6 +26,7 @@ export const MenuLinkStyled = styled.a<ThemeModeProps>`
   font-size: 20px;
   font-weight: 500;
   padding: 12px 16px;
+  min-height: 48px;
   border-radius: 999px;
   display: flex;
   align-items: center;
@@ -41,11 +43,12 @@ export const MenuLinkStyled = styled.a<ThemeModeProps>`
     font-weight: 700;
   }
 
-  @media (max-width: 1100px) {
+  ${media.tablet} {
     span {
       display: none;
     }
     font-size: 22px;
     padding: 12px;
+    justify-content: center;
   }
 `;

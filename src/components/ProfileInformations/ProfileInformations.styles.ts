@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { media } from "../../config/styles/breakpoints";
 
 export const TabListStyled = styled.div`
 	margin-top: 16px;
@@ -13,6 +14,7 @@ export const TabButtonStyled = styled.button<{ $isActive: boolean }>`
 	background: transparent;
 	color: ${({ $isActive }) => ($isActive ? "var(--app-selected-text)" : "var(--app-text-muted)")};
 	padding: 14px 8px 12px;
+	min-height: 44px;
 	font-weight: 700;
 	cursor: pointer;
 	transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
@@ -24,6 +26,10 @@ export const TabButtonStyled = styled.button<{ $isActive: boolean }>`
 
 export const TweetsContainerStyled = styled.div`
 	padding: 12px 16px 0;
+
+	${media.mobile} {
+		padding: 10px 12px 0;
+	}
 `;
 
 export const EmptyStateStyled = styled.p`
