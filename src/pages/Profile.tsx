@@ -15,6 +15,7 @@ import {
 } from "../config/events/tweetCreatedEvent";
 import {
     isTweetLikeChangedDetail,
+    type TweetLikeChangedDetail,
     TWEET_LIKE_CHANGED_EVENT,
 } from "../config/events/tweetLikeChangedEvent";
 import followService from "../config/services/follow.service";
@@ -114,6 +115,28 @@ function dedupeTweetsById(tweets: ProfileTweet[]): ProfileTweet[] {
     });
 
     return Array.from(mapById.values());
+}
+
+function applyLikeChangeToTweet(tweet: ProfileTweet, detail: TweetLikeChangedDetail): ProfileTweet {
+    if (tweet.id !== detail.tweetId) {
+        return tweet;
+    }
+
+    const currentCount = typeof tweet.likesCount === "number"
+        ? tweet.likesCount
+        : tweet.likes?.length ?? 0;
+    const nextCount = detail.isLiked
+        ? currentCount + 1
+        : Math.max(currentCount - 1, 0);
+
+    return {
+        ...tweet,
+        likesCount: nextCount,
+    };
+}
+
+function applyLikeChangeToList(tweets: ProfileTweet[], detail: TweetLikeChangedDetail): ProfileTweet[] {
+    return tweets.map((tweet) => applyLikeChangeToTweet(tweet, detail));
 }
 
 function flattenTweetsWithReplies(tweets: FeedTweetApiWithReplies[]): FeedTweetApiWithReplies[] {
@@ -333,7 +356,6 @@ export const ProfilePage = () => {
     const [likedTweets, setLikedTweets] = useState<ProfileTweet[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [profileRefreshToken, setProfileRefreshToken] = useState(0);
     const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
     const [profileEditError, setProfileEditError] = useState<string | null>(null);
@@ -557,7 +579,7 @@ export const ProfilePage = () => {
         }
 
         void loadProfileTweets();
-    }, [authenticatedUser, currentUserId, navigate, profileRefreshToken, username]);
+    }, [authenticatedUser, currentUserId, navigate, username]);
 
     useEffect(() => {
         function handleTweetLikeChanged(event: Event) {
@@ -567,7 +589,38 @@ export const ProfilePage = () => {
                 return;
             }
 
-            setProfileRefreshToken((currentToken) => currentToken + 1);
+            const detail = customEvent.detail;
+
+            setTweets((currentTweets) => applyLikeChangeToList(currentTweets, detail));
+
+            setLikedTweets((currentLikedTweets) => {
+                const nextLikedTweets = applyLikeChangeToList(currentLikedTweets, detail);
+
+                if (!profileUser?.id || detail.userId !== profileUser.id) {
+                    return nextLikedTweets;
+                }
+
+                if (!detail.isLiked) {
+                    return nextLikedTweets.filter((tweet) => tweet.id !== detail.tweetId);
+                }
+
+                if (nextLikedTweets.some((tweet) => tweet.id === detail.tweetId)) {
+                    return nextLikedTweets;
+                }
+
+                const sourceTweet = tweets.find((tweet) => tweet.id === detail.tweetId);
+
+                if (!sourceTweet) {
+                    return nextLikedTweets;
+                }
+
+                const sourceWithUpdatedLike = applyLikeChangeToTweet(sourceTweet, detail);
+
+                return dedupeTweetsById([sourceWithUpdatedLike, ...nextLikedTweets]).sort(
+                    (firstTweet, secondTweet) =>
+                        new Date(secondTweet.createdAt).getTime() - new Date(firstTweet.createdAt).getTime(),
+                );
+            });
         }
 
         window.addEventListener(TWEET_LIKE_CHANGED_EVENT, handleTweetLikeChanged);
@@ -575,7 +628,7 @@ export const ProfilePage = () => {
         return () => {
             window.removeEventListener(TWEET_LIKE_CHANGED_EVENT, handleTweetLikeChanged);
         };
-    }, []);
+    }, [profileUser?.id, tweets]);
 
     useEffect(() => {
         function handleTweetCreated(event: Event) {
