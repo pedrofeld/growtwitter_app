@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import styled from "styled-components";
+import { ProfileEditForm, ProfileEditNotice } from "../components/ProfileEditForm";
 import { ProfileHeader } from "../components/ProfileHeader/ProfileHeader";
 import {
     ProfileInformations,
@@ -265,80 +265,6 @@ function getUpdatedUserPayload(responseData: unknown): Partial<ProfileUser> | nu
     return null;
 }
 
-const ProfileEditFormContainer = styled.form`
-    margin: 16px;
-    padding: 16px;
-    border: 1px solid var(--app-border);
-    border-radius: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    background: var(--app-surface);
-    color: var(--app-text);
-`;
-
-const ProfileEditField = styled.label`
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--app-text);
-`;
-
-const ProfileEditInput = styled.input`
-    border: 1px solid var(--app-input-border);
-    border-radius: 10px;
-    padding: 10px 12px;
-    font-size: 14px;
-    background: var(--app-input-bg);
-    color: var(--app-input-text);
-
-    &::placeholder {
-        color: var(--app-input-placeholder);
-    }
-
-    &:focus {
-        outline: 2px solid var(--app-focus-ring);
-        outline-offset: 0;
-        border-color: var(--app-accent);
-    }
-`;
-
-const ProfileEditActions = styled.div`
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-`;
-
-const ProfileEditButton = styled.button<{ $variant: "primary" | "secondary" }>`
-    border-radius: 999px;
-    border: 1px solid ${({ $variant }) => ($variant === "primary" ? "var(--app-accent)" : "var(--app-button-secondary-border)")};
-    background: ${({ $variant }) => ($variant === "primary" ? "var(--app-accent)" : "var(--app-button-secondary-bg)")};
-    color: ${({ $variant }) => ($variant === "primary" ? "var(--app-button-primary-text)" : "var(--app-button-secondary-text)")};
-    padding: 10px 16px;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
-
-    &:hover:not(:disabled) {
-        background: ${({ $variant }) => ($variant === "primary" ? "var(--app-accent-hover)" : "var(--app-button-secondary-hover-bg)")};
-        border-color: ${({ $variant }) => ($variant === "primary" ? "var(--app-accent-hover)" : "var(--app-button-secondary-hover-border)")};
-    }
-
-    &:disabled {
-        opacity: 0.65;
-        cursor: not-allowed;
-    }
-`;
-
-const ProfileEditMessage = styled.p<{ $type: "error" | "success" }>`
-    margin: 0;
-    font-size: 13px;
-    line-height: 1.35;
-    color: ${({ $type }) => ($type === "error" ? "var(--app-danger)" : "var(--app-success)")};
-`;
 
 export const ProfilePage = () => {
     const { user, updateUser } = useAuth();
@@ -921,59 +847,19 @@ export const ProfilePage = () => {
             />
 
             {isOwnProfile && isEditingProfile ? (
-                <ProfileEditFormContainer onSubmit={handleProfileEditSubmit}>
-                    <ProfileEditField>
-                        Name
-                        <ProfileEditInput
-                            type="text"
-                            value={profileEditForm.name}
-                            onChange={(event) => handleProfileFormFieldChange("name", event.target.value)}
-                            placeholder="Your name"
-                            maxLength={80}
-                            required
-                        />
-                    </ProfileEditField>
-
-                    <ProfileEditField>
-                        Username
-                        <ProfileEditInput
-                            type="text"
-                            value={profileEditForm.username}
-                            onChange={(event) => handleProfileFormFieldChange("username", event.target.value)}
-                            placeholder="yourusername"
-                            maxLength={30}
-                            required
-                        />
-                    </ProfileEditField>
-
-                    <ProfileEditField>
-                        Profile image URL
-                        <ProfileEditInput
-                            type="url"
-                            value={profileEditForm.profileImage}
-                            onChange={(event) => handleProfileFormFieldChange("profileImage", event.target.value)}
-                            placeholder="https://example.com/avatar.jpg"
-                        />
-                    </ProfileEditField>
-
-                    {profileEditError ? <ProfileEditMessage $type="error">{profileEditError}</ProfileEditMessage> : null}
-                    {profileEditSuccess ? <ProfileEditMessage $type="success">{profileEditSuccess}</ProfileEditMessage> : null}
-
-                    <ProfileEditActions>
-                        <ProfileEditButton type="button" $variant="secondary" onClick={handleProfileEditCancel} disabled={isUpdatingProfile}>
-                            Cancel
-                        </ProfileEditButton>
-                        <ProfileEditButton type="submit" $variant="primary" disabled={isUpdatingProfile}>
-                            {isUpdatingProfile ? "Saving..." : "Save changes"}
-                        </ProfileEditButton>
-                    </ProfileEditActions>
-                </ProfileEditFormContainer>
+                <ProfileEditForm
+                    form={profileEditForm}
+                    onChange={handleProfileFormFieldChange}
+                    onCancel={handleProfileEditCancel}
+                    onSubmit={handleProfileEditSubmit}
+                    isUpdating={isUpdatingProfile}
+                    error={profileEditError}
+                    success={profileEditSuccess}
+                />
             ) : null}
 
             {isOwnProfile && !isEditingProfile && profileEditSuccess ? (
-                <ProfileEditFormContainer as="div">
-                    <ProfileEditMessage $type="success">{profileEditSuccess}</ProfileEditMessage>
-                </ProfileEditFormContainer>
+                <ProfileEditNotice message={profileEditSuccess} type="success" />
             ) : null}
 
             <ProfileInformations
