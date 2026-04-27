@@ -1,13 +1,26 @@
 import { FaHome, FaSearch, FaUser } from "react-icons/fa";
-import { MobileBottomNavItem, MobileBottomNavRoot } from "./MobileBottomNav.styles";
+import {
+  MobileBottomNavItem,
+  MobileBottomNavRoot,
+} from "./MobileBottomNav.styles";
+import { MobileAccountActionsMenu } from "../MobileActionsMenu/MobileAccountActionsMenu";
 
 interface MobileBottomNavProps {
   themeMode: "light" | "dark";
+  onToggleTheme: () => void;
+  onLogout: () => void;
 }
 
-export const MobileBottomNav = ({ themeMode }: MobileBottomNavProps) => {
+export const MobileBottomNav = ({
+  themeMode,
+  onToggleTheme,
+  onLogout,
+}: MobileBottomNavProps) => {
   return (
-    <MobileBottomNavRoot $themeMode={themeMode} aria-label="Primary mobile navigation">
+    <MobileBottomNavRoot
+      $themeMode={themeMode}
+      aria-label="Primary mobile navigation"
+    >
       <MobileBottomNavItem to="/" end $themeMode={themeMode}>
         <FaHome />
         Home
@@ -20,6 +33,11 @@ export const MobileBottomNav = ({ themeMode }: MobileBottomNavProps) => {
         <FaUser />
         Profile
       </MobileBottomNavItem>
+      <MobileAccountActionsMenu
+        themeMode={themeMode}
+        onToggleTheme={onToggleTheme}
+        onLogout={onLogout}
+      />
     </MobileBottomNavRoot>
   );
 };

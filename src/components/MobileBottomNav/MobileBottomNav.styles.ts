@@ -1,8 +1,8 @@
 import { NavLink } from "react-router-dom";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 import { media } from "../../config/styles/breakpoints";
 
-interface ThemeModeProps {
+export interface ThemeModeProps {
   $themeMode: "light" | "dark";
 }
 
@@ -33,17 +33,19 @@ export const MobileBottomNavRoot = styled.nav<ThemeModeProps>`
     bottom: 0;
     z-index: 30;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
     gap: 8px;
     border-top: 1px solid ${({ $themeMode }) => palette[$themeMode].border};
     background: ${({ $themeMode }) => palette[$themeMode].panel};
     backdrop-filter: blur(8px);
+    overflow: visible;
   }
 `;
 
-export const MobileBottomNavItem = styled(NavLink)<ThemeModeProps>`
+export const mobileBottomNavItemStyles = css<ThemeModeProps>`
   min-height: 44px;
+  width: 100%;
   border-radius: 999px;
   color: ${({ $themeMode }) => palette[$themeMode].text};
   text-decoration: none;
@@ -65,4 +67,8 @@ export const MobileBottomNavItem = styled(NavLink)<ThemeModeProps>`
     background: ${({ $themeMode }) => palette[$themeMode].activeBg};
     font-weight: 700;
   }
+`;
+
+export const MobileBottomNavItem = styled(NavLink)<ThemeModeProps>`
+  ${mobileBottomNavItemStyles}
 `;

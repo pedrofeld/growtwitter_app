@@ -108,7 +108,14 @@ export const DefaultLayout = () => {
         themeMode={themeMode}
       />
 
-      {shouldShowMobileNav ? <MobileBottomNav themeMode={themeMode} /> : null}
+      {shouldShowMobileNav ? (
+        <MobileBottomNav
+          key={location.pathname}
+          themeMode={themeMode}
+          onToggleTheme={toggleTheme}
+          onLogout={logout}
+        />
+      ) : null}
     </LayoutRoot>
   );
 };
